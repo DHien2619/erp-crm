@@ -32,6 +32,12 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.local.example
+
+# Dữ liệu tài chính thô — KHÔNG commit
+*.xlsx
+supabase/_data.json
+supabase/_clean.xlsx
 
 # vercel
 .vercel
