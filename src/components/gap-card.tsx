@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Receipt, ArrowRight, AlertCircle } from "lucide-react";
 import { formatVND, formatFullVND } from "@/lib/utils";
 
@@ -57,12 +58,14 @@ export function GapCard({ summary }: { summary: Summary }) {
         </p>
         <div className="flex items-center justify-between mt-3">
           <span className="text-xs text-white/85">{gapPct}% chi phí chưa có HĐ</span>
-          <button
-            aria-label="Xem chi tiết"
+          <Link
+            href="/reports"
+            aria-label="Xem chi tiết báo cáo gap"
+            title="Xem báo cáo gap"
             className="w-9 h-9 rounded-full bg-white/25 hover:bg-white/35 transition-colors flex items-center justify-center"
           >
             <ArrowRight className="w-4 h-4 text-white" />
-          </button>
+          </Link>
         </div>
       </div>
     </div>

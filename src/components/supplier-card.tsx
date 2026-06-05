@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   Cloud,
   Megaphone,
@@ -36,12 +37,14 @@ function SupplierItem({ s }: { s: SupplierStat }) {
         <Icon className="w-5 h-5 text-white" />
       </div>
 
-      <button
-        aria-label="Thao tác"
-        className="absolute top-3 right-3 w-7 h-7 rounded-full hover:bg-[var(--primary-soft)] flex items-center justify-center text-[var(--muted-soft)]"
+      <Link
+        href="/suppliers"
+        aria-label="Xem nhà cung cấp"
+        title="Mở trang Nhà cung cấp"
+        className="absolute top-3 right-3 w-7 h-7 rounded-full hover:bg-[var(--primary-soft)] flex items-center justify-center text-[var(--muted-soft)] hover:text-[var(--primary)] transition-colors"
       >
         <MoreHorizontal className="w-4 h-4" />
-      </button>
+      </Link>
 
       <div className="text-center -mt-1">
         <p className="font-bold text-[var(--foreground)] text-sm">{s.name}</p>

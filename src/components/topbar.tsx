@@ -2,6 +2,7 @@
 
 import { GlobalSearch } from "@/components/ui/global-search";
 import { NotificationsBell } from "@/components/ui/notifications-bell";
+import { UserMenu } from "@/components/ui/user-menu";
 
 export function Topbar({
   title,
@@ -28,9 +29,7 @@ export function Topbar({
         </span>
         {action}
         <NotificationsBell />
-        <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-deep)] flex items-center justify-center text-white text-sm font-bold shadow-md shrink-0">
-          DH
-        </div>
+        <UserMenu />
       </div>
     </header>
   );

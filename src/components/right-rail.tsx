@@ -62,17 +62,22 @@ export function RightRail({
 
         <ul className="flex flex-col gap-3">
           {list.map((inv) => (
-            <li key={inv.id} className="flex items-center gap-3 group cursor-pointer">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-deep)] flex items-center justify-center text-white text-xs font-bold shrink-0">
-                {inv.initials}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-[var(--foreground)] truncate">{inv.supplier}</p>
-                <p className="text-[11px] text-[var(--muted)]">{formatVND(inv.amount)} · {inv.date}</p>
-              </div>
-              <span className={cn("text-[10px] font-semibold px-2 py-1 rounded-full whitespace-nowrap", statusStyles[inv.status])}>
-                {statusLabel[inv.status]}
-              </span>
+            <li key={inv.id}>
+              <Link
+                href={tab === "in" ? "/invoices/in" : "/customers"}
+                className="flex items-center gap-3 group rounded-xl -mx-1 px-1 py-1 hover:bg-[var(--primary-soft)]/40 transition-colors"
+              >
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-deep)] flex items-center justify-center text-white text-xs font-bold shrink-0">
+                  {inv.initials}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-[var(--foreground)] truncate">{inv.supplier}</p>
+                  <p className="text-[11px] text-[var(--muted)]">{formatVND(inv.amount)} · {inv.date}</p>
+                </div>
+                <span className={cn("text-[10px] font-semibold px-2 py-1 rounded-full whitespace-nowrap", statusStyles[inv.status])}>
+                  {statusLabel[inv.status]}
+                </span>
+              </Link>
             </li>
           ))}
           {list.length === 0 && (
