@@ -87,14 +87,14 @@ export function ForecastClient({
     <>
       <Topbar title="Dự báo tài chính" subtitle="Mô phỏng dòng tiền dựa trên giả định" />
 
-      <div className="grid grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         <MiniStat tone="primary" icon={<TrendingUp className="w-4 h-4" />} label={`Doanh thu ${months}T tới`} value={`${summary.cumRevenue}M`} />
         <MiniStat tone="success" icon={<PiggyBank className="w-4 h-4" />} label={`Lợi nhuận ${months}T tới`} value={`${summary.cumProfit}M`} />
         <MiniStat tone={summary.endCash >= 0 ? "default" : "accent"} icon={<Wallet className="w-4 h-4" />} label="Tiền mặt cuối kỳ" value={`${summary.endCash}M`} />
         <MiniStat tone="default" icon={<CalendarClock className="w-4 h-4" />} label={summary.runwayMonth ? "Cạn tiền tại" : "Hoà vốn tại"} value={summary.runwayMonth ?? summary.breakeven ?? "—"} />
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Bảng giả định nhập tay */}
         <div className="card-soft p-5">
           <div className="flex items-center gap-2 mb-4">
@@ -115,7 +115,7 @@ export function ForecastClient({
         </div>
 
         {/* Biểu đồ + bảng */}
-        <div className="col-span-2 flex flex-col gap-4">
+        <div className="lg:col-span-2 flex flex-col gap-4">
           <div className="card-soft p-6">
             <div className="flex items-center justify-between mb-4">
               <div>

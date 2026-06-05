@@ -49,7 +49,7 @@ export function ReportsClient({ rows }: { rows: GapRow[] }) {
         }
       />
 
-      <div className="grid grid-cols-5 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
         <MiniStat
           icon={<TrendingUp className="w-4 h-4" />}
           label="Doanh thu"

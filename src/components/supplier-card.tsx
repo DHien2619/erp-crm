@@ -83,7 +83,7 @@ export function SupplierCards({ stats }: { stats: SupplierStat[] }) {
   const top = stats.slice(0, 3);
   if (top.length === 0) return null;
   return (
-    <div className="grid grid-cols-3 gap-4 mt-10">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-10">
       {top.map((s) => (
         <SupplierItem key={s.name} s={s} />
       ))}

@@ -26,7 +26,7 @@ export function RightRail({
   const deadlines = getUpcomingTaxDeadlines(new Date(), 3);
 
   return (
-    <aside className="card-soft py-6 px-5 flex flex-col gap-5 w-[300px]">
+    <aside className="card-soft py-6 px-5 flex flex-col gap-5 w-full lg:w-[300px] mt-4 lg:mt-0 shrink-0">
       <div>
         <div className="flex items-center justify-between mb-1">
           <h3 className="font-bold text-[var(--foreground)]">Hoá đơn gần đây</h3>

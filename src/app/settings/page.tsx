@@ -46,13 +46,13 @@ export default function SettingsPage() {
         }
       />
 
-      <div className="grid grid-cols-3 gap-4">
-        <div className="col-span-2 card-soft p-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2 card-soft p-6">
           <div className="flex items-center gap-2 mb-5">
             <Building2 className="w-4 h-4 text-[var(--primary)]" />
             <h3 className="font-bold text-[var(--foreground)]">Thông tin công ty</h3>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Tên công ty" className="col-span-2">
               <input className="erp-input" value={s.companyName} onChange={(e) => update("companyName", e.target.value)} />
             </Field>

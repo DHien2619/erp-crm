@@ -222,7 +222,7 @@ function ManualForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+    <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <Field label="Nhà cung cấp" className="col-span-2">
         <input
           name="supplier_name"

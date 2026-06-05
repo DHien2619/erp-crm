@@ -29,8 +29,8 @@ export default async function Home() {
     <AppShell rightRail={<RightRail recentIn={recentIn} recentOut={recentOut} />}>
       <Topbar title="Dashboard" subtitle="Tổng quan" />
 
-      <div className="grid grid-cols-3 gap-4">
-        <div className="col-span-2 min-w-0">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2 min-w-0">
           <OverviewChart daily={daily} summary={summary} />
         </div>
         <div className="flex flex-col gap-4 min-w-0">

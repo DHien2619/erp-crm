@@ -65,7 +65,7 @@ export function RevenueModal({
 
   return (
     <Modal open onClose={onClose} title="Ghi nhận doanh thu" subtitle="Hoá đơn đầu ra cho khách hàng">
-      <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Field label="Khách hàng" className="col-span-2">
           <input name="company_name" defaultValue={company} required placeholder="Tên khách hàng" className="erp-input" />
         </Field>

@@ -27,7 +27,7 @@ export default async function AdvancesPage() {
   return (
     <AppShell>
       <Topbar title="Tạm ứng & hoàn ứng" subtitle="Nghiệp vụ" />
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         <div className="card-primary text-white p-5 flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-white/15 flex items-center justify-center"><Coins className="w-5 h-5" /></div>
           <div><p className="text-[11px] uppercase tracking-wider font-semibold text-white/70">Còn phải hoàn</p><p className="text-2xl font-bold mt-0.5">{formatVND(totalOutstanding)}</p></div>

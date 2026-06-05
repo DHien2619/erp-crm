@@ -55,7 +55,7 @@ export default async function ModulesPage() {
     <AppShell>
       <Topbar title="Nghiệp vụ" subtitle="Các module quản trị tài chính" />
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {modules.map((m) => (
           <Link
             key={m.href}

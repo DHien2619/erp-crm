@@ -68,7 +68,7 @@ export function DebtsClient({
     <>
       <Topbar title="Công nợ" subtitle="Phải thu khách hàng & phải trả nhà cung cấp" />
 
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <MiniStat tone="primary" icon={<ArrowDownLeft className="w-5 h-5" />} label="Phải thu (AR)" value={formatVND(arTotal)} hint={`${receivables.length} khách còn nợ`} />
         <MiniStat tone="accent" icon={<ArrowUpRight className="w-5 h-5" />} label="Phải trả (AP)" value={formatVND(apTotal)} hint={`${payables.length} NCC còn nợ`} />
         <MiniStat tone={net >= 0 ? "success" : "default"} icon={<Scale className="w-5 h-5" />} label="Công nợ ròng" value={formatVND(Math.abs(net))} hint={net >= 0 ? "nghiêng phải thu" : "nghiêng phải trả"} />

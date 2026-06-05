@@ -99,7 +99,7 @@ export function CustomersClient({ rows }: { rows: CompanyWithStats[] }) {
         }
       />
 
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <Stat icon={<Users className="w-5 h-5" />} tone="primary" label="Tổng khách hàng" value={`${rows.length}`} hint="đang theo dõi" />
         <Stat icon={<TrendingUp className="w-5 h-5" />} tone="default" label="Tổng doanh thu" value={formatVND(totalRevenue)} hint="đã ghi nhận" />
         <Stat icon={<AlertCircle className="w-5 h-5" />} tone="accent" label="Còn phải thu" value={formatVND(totalOutstanding)} hint="công nợ khách hàng" />
@@ -238,7 +238,7 @@ function CustomerModal({
       title={draft.id ? "Sửa khách hàng" : "Thêm khách hàng"}
       subtitle="Thông tin xuất hoá đơn & liên hệ"
     >
-      <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormField label="Tên khách hàng" className="col-span-2">
           <input name="name" defaultValue={draft.name} required placeholder="Công ty TNHH ..." className="erp-input" />
         </FormField>

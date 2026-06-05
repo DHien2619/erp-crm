@@ -121,7 +121,7 @@ export function SuppliersClient({
         }
       />
 
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <MiniStat tone="primary" icon={<Building2 className="w-5 h-5" />} label="Tổng NCC" value={`${totalSuppliers}`} hint="có phát sinh chi phí" />
         <MiniStat tone="default" icon={<Receipt className="w-5 h-5" />} label="VAT có thể thu hồi" value={formatVND(totalVat)} hint="nếu thu đủ HĐ" />
         <MiniStat tone="accent" icon={<AlertCircle className="w-5 h-5" />} label="Chi phí thiếu HĐ" value={formatVND(totalOutstanding)} hint="cần thu hồi" />
@@ -286,7 +286,7 @@ function VendorModal({
 
   return (
     <Modal open onClose={onClose} title={draft.id ? "Sửa nhà cung cấp" : "Thêm nhà cung cấp"} subtitle="Thông tin & tài khoản nhận tiền">
-      <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Field label="Tên NCC" className="col-span-2">
           <input name="name" defaultValue={draft.name} required className="erp-input" />
         </Field>

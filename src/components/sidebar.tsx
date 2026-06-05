@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Bell,
   Home,
   FileText,
   BarChart3,
@@ -12,6 +11,7 @@ import {
   LayoutGrid,
   Settings,
   LogOut,
+  PanelLeftClose,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -34,11 +34,25 @@ function isActive(pathname: string, href: string) {
   return pathname.startsWith(href.split("/").slice(0, 3).join("/"));
 }
 
-export function Sidebar() {
+export function Sidebar({
+  onToggle,
+  onNavigate,
+}: {
+  onToggle?: () => void;
+  onNavigate?: () => void;
+}) {
   const pathname = usePathname();
 
   return (
     <aside className="card-primary flex flex-col items-center py-6 w-[78px] mx-3 my-3 rounded-[28px] shrink-0">
+      <button
+        onClick={onToggle}
+        title="Thu gọn sidebar"
+        aria-label="Thu gọn sidebar"
+        className="w-11 h-11 rounded-2xl flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-all mb-3"
+      >
+        <PanelLeftClose className="w-5 h-5" strokeWidth={2} />
+      </button>
       <div className="flex flex-col gap-3 flex-1">
         {navItems.map((item) => {
           const active = isActive(pathname, item.href);
@@ -47,6 +61,7 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               title={item.label}
+              onClick={onNavigate}
               className={cn(
                 "w-11 h-11 rounded-2xl flex items-center justify-center transition-all",
                 active
