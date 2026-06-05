@@ -11,7 +11,6 @@ import {
   LayoutGrid,
   Settings,
   LogOut,
-  PanelLeftClose,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -35,25 +34,38 @@ function isActive(pathname: string, href: string) {
 }
 
 export function Sidebar({
-  onToggle,
   onNavigate,
+  expanded = false,
 }: {
-  onToggle?: () => void;
   onNavigate?: () => void;
+  expanded?: boolean;
 }) {
   const pathname = usePathname();
 
+  const label = (text: string) =>
+    cn(
+      "whitespace-nowrap text-sm font-medium transition-opacity duration-150",
+      expanded ? "opacity-100" : "opacity-0 group-hover/sb:opacity-100"
+    );
+
   return (
-    <aside className="card-primary flex flex-col items-center py-6 w-[78px] mx-3 my-3 rounded-[28px] shrink-0">
-      <button
-        onClick={onToggle}
-        title="Thu gọn sidebar"
-        aria-label="Thu gọn sidebar"
-        className="w-11 h-11 rounded-2xl flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-all mb-3"
-      >
-        <PanelLeftClose className="w-5 h-5" strokeWidth={2} />
-      </button>
-      <div className="flex flex-col gap-3 flex-1">
+    <aside
+      className={cn(
+        "group/sb card-primary rounded-[28px] h-full flex flex-col py-6 px-3.5 overflow-hidden transition-[width] duration-200 ease-out shadow-xl",
+        expanded ? "w-[228px]" : "w-[78px] hover:w-[228px]"
+      )}
+    >
+      {/* Brand */}
+      <div className="flex items-center gap-3 h-11 px-2 mb-4 shrink-0">
+        <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center text-white font-extrabold shrink-0">
+          E
+        </div>
+        <span className={cn(label(""), "font-bold text-white text-base")}>
+          ERP-CRM
+        </span>
+      </div>
+
+      <nav className="flex flex-col gap-1.5 flex-1">
         {navItems.map((item) => {
           const active = isActive(pathname, item.href);
           return (
@@ -63,22 +75,25 @@ export function Sidebar({
               title={item.label}
               onClick={onNavigate}
               className={cn(
-                "w-11 h-11 rounded-2xl flex items-center justify-center transition-all",
+                "flex items-center gap-3 h-11 rounded-2xl px-2.5 transition-colors",
                 active
                   ? "bg-white text-[var(--primary)] shadow-md"
                   : "text-white/70 hover:text-white hover:bg-white/10"
               )}
             >
-              <item.icon className="w-5 h-5" strokeWidth={2} />
+              <item.icon className="w-5 h-5 shrink-0" strokeWidth={2} />
+              <span className={label(item.label)}>{item.label}</span>
             </Link>
           );
         })}
-      </div>
+      </nav>
+
       <button
         title="Đăng xuất"
-        className="w-11 h-11 rounded-2xl flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-all"
+        className="flex items-center gap-3 h-11 rounded-2xl px-2.5 text-white/70 hover:text-white hover:bg-white/10 transition-colors shrink-0"
       >
-        <LogOut className="w-5 h-5" strokeWidth={2} />
+        <LogOut className="w-5 h-5 shrink-0" strokeWidth={2} />
+        <span className={label("Đăng xuất")}>Đăng xuất</span>
       </button>
     </aside>
   );
