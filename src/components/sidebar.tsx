@@ -9,6 +9,7 @@ import {
   Building2,
   Wallet,
   LayoutGrid,
+  Target,
   Settings,
   LogOut,
 } from "lucide-react";
@@ -24,6 +25,7 @@ const navItems = [
   { icon: Wallet, label: "Công nợ", href: "/debts" },
   { icon: BarChart3, label: "Báo cáo", href: "/reports" },
   { icon: TrendingUp, label: "Dự báo", href: "/forecast" },
+  { icon: Target, label: "Chiến lược", href: "/strategy" },
   { icon: LayoutGrid, label: "Nghiệp vụ", href: "/modules" },
   { icon: Settings, label: "Cài đặt", href: "/settings" },
 ];

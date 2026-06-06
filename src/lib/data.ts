@@ -283,6 +283,55 @@ export async function getBudgets(): Promise<Budget[]> {
   return data ?? [];
 }
 
+export type StrategyData = {
+  revenue: number;
+  expense: number;
+  marketingSpend: number;
+  gapMissing: number; // chi phí chưa có HĐ
+  customerCount: number;
+  receivableOutstanding: number;
+  monthly: MonthlyPoint[]; // triệu đồng
+};
+
+/** Gom toàn bộ số liệu cho trang Đề xuất chiến lược (VND) */
+export async function getStrategyData(): Promise<StrategyData> {
+  const supabase = await createClient();
+  const [out, inn, co, rec, monthly] = await Promise.all([
+    supabase.from("invoices_out").select("amount"),
+    supabase.from("invoices_in").select("amount, category, status"),
+    supabase.from("companies").select("id"),
+    supabase.from("receivables").select("outstanding"),
+    getMonthlyPoints(),
+  ]);
+  if (out.error) throw new Error(`getStrategyData/out: ${out.error.message}`);
+  if (inn.error) throw new Error(`getStrategyData/in: ${inn.error.message}`);
+
+  const revenue = (out.data ?? []).reduce((s, r) => s + Number(r.amount), 0);
+  const inRows = inn.data ?? [];
+  const expense = inRows.reduce((s, r) => s + Number(r.amount), 0);
+  const marketingSpend = inRows
+    .filter((r) => r.category === "marketing")
+    .reduce((s, r) => s + Number(r.amount), 0);
+  const gapMissing = inRows
+    .filter((r) => r.status === "missing")
+    .reduce((s, r) => s + Number(r.amount), 0);
+  const customerCount = (co.data ?? []).length;
+  const receivableOutstanding = ((rec.data ?? []) as { outstanding: number }[]).reduce(
+    (s, r) => s + Number(r.outstanding),
+    0
+  );
+
+  return {
+    revenue,
+    expense,
+    marketingSpend,
+    gapMissing,
+    customerCount,
+    receivableOutstanding,
+    monthly,
+  };
+}
+
 /** Tổng số dư đầu kỳ các tài khoản (VND) — dùng cho dự báo */
 export async function getTotalOpeningBalance(): Promise<number> {
   const supabase = await createClient();
