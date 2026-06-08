@@ -133,23 +133,7 @@ export async function syncFromLark(): Promise<SyncResult> {
       supSet.set(supplier, { name: supplier, category: cat, ease_to_collect: ease(supplier) });
   }
 
-  // ===== Doanh thu -> invoices_out =====
-  const dt = await readBy("doanh thu");
-  const invoicesOut: F[] = dt.map((r, i) => {
-    const amount = num(r["Tổng tiền (VND)"]);
-    const congno = (txt(r["Trạng thái công nợ"]) ?? "").toLowerCase();
-    const status = congno.includes("đủ") ? "matched" : "pending";
-    const paid = status === "matched" ? amount : num(r["Đã thu (VND)"]);
-    return {
-      company_name: txt(r["Khách hàng"]) ?? "Khách hàng lẻ",
-      code: txt(r["Số hợp đồng"]) ?? `DT-${i + 1}`,
-      amount, paid_amount: paid, vat_rate: 10, status,
-      invoice_date: dateISO(r["Ngày xuất hóa đơn"]),
-      due_date: dateISO(r["Hạn thanh toán"]),
-    };
-  });
-
-  // ===== Khách hàng -> companies =====
+  // ===== Khách hàng -> companies (đọc trước để khớp tên cho doanh thu) =====
   const kh = await readBy("khách hàng");
   const companies: F[] = kh.map((r) => ({
     name: txt(r["Tên khách hàng"]) ?? "Khách hàng",
@@ -159,6 +143,32 @@ export async function syncFromLark(): Promise<SyncResult> {
     address: txt(r["Địa chỉ xuất HĐ"]),
     payment_terms: txt(r["Điều khoản thanh toán"]),
   }));
+  const companyNames = companies
+    .map((c) => c.name as string)
+    .filter((n) => n && n !== "Khách hàng");
+  // Lark "Khách hàng" trong Doanh thu hay bị cụt ("Công ty ") → khớp về tên đầy đủ
+  const matchCompany = (raw: string | null): string => {
+    if (!raw) return "Khách hàng lẻ";
+    const r = raw.trim();
+    const hit = companyNames.find((n) => n.startsWith(r) || r.startsWith(n));
+    return hit ?? r;
+  };
+
+  // ===== Doanh thu -> invoices_out =====
+  const dt = await readBy("doanh thu");
+  const invoicesOut: F[] = dt.map((r, i) => {
+    const amount = num(r["Tổng tiền (VND)"]);
+    const congno = (txt(r["Trạng thái công nợ"]) ?? "").toLowerCase();
+    const status = congno.includes("đủ") ? "matched" : "pending";
+    const paid = status === "matched" ? amount : num(r["Đã thu (VND)"]);
+    return {
+      company_name: matchCompany(txt(r["Khách hàng"])),
+      code: txt(r["Số hợp đồng"]) ?? `DT-${i + 1}`,
+      amount, paid_amount: paid, vat_rate: 10, status,
+      invoice_date: dateISO(r["Ngày xuất hóa đơn"]),
+      due_date: dateISO(r["Hạn thanh toán"]),
+    };
+  });
 
   // ===== Vendors -> suppliers (nếu trống thì lấy từ Chi phí) =====
   const ven = await readBy("vendor");
