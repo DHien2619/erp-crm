@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Building2, Percent, Wallet, Check } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Topbar } from "@/components/topbar";
+import { LarkSyncCard } from "@/components/lark/lark-sync-card";
 import {
   loadSettings,
   saveSettings,
@@ -94,6 +95,10 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="mt-4">
+        <LarkSyncCard />
       </div>
 
       <p className="text-[11px] text-[var(--muted-soft)] mt-4">
