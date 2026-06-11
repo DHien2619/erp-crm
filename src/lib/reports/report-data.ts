@@ -57,30 +57,47 @@ export async function getReportData(period: PeriodKey): Promise<ReportData> {
   };
 }
 
-/** Dựng nội dung dạng text thuần cho Google Docs (insertText). */
+/** Dựng nội dung text cho Google Docs — bố cục trang trọng (title, mục La Mã, kẻ phân cách). */
 export function buildPlainText(d: ReportData): string {
-  const monthlyLines = d.rows
-    .map(
-      (r) =>
-        `  ${r.month}\t\tDT ${r.revenue} tr\tChi phí ${r.expense} tr\tHĐ vào ${r.invoiceIn} tr\tGAP ${r.gap} tr`
-    )
-    .join("\n");
+  const RULE = "─".repeat(56);
+  const m = (n: number) => `${fmtVND(n * 1_000_000)}`;
+  const monthName = (t: string) => t.replace(/^T/, "Tháng ");
+
+  const monthlyLines = d.rows.length
+    ? d.rows
+        .map(
+          (r) =>
+            `      • ${monthName(r.month)}  —  Doanh thu ${r.revenue} · Chi phí ${r.expense} · HĐ vào ${r.invoiceIn} · GAP ${r.gap}`
+        )
+        .join("\n")
+    : "      (chưa có dữ liệu)";
 
   return [
-    "1. TỔNG QUAN",
-    `   • Doanh thu:                ${fmtVND(d.sum.revenue * 1_000_000)}`,
-    `   • Chi phí thực:             ${fmtVND(d.sum.expense * 1_000_000)}`,
-    `   • Hoá đơn đầu vào đã có (${d.sum.coverage}%): ${fmtVND(d.sum.invoiceIn * 1_000_000)}`,
-    `   • GAP (chi phí chưa có HĐ): ${fmtVND(d.sum.gap * 1_000_000)}`,
-    `   • Thuế TNDN tiết kiệm nếu bù đủ GAP (~20%): ${fmtVND(d.sum.taxSaving * 1_000_000)}`,
+    "BÁO CÁO TÀI CHÍNH",
+    "AIECOS",
+    `${d.periodText}  ·  Xuất ngày ${d.dateStr}`,
     "",
-    "2. DÒNG TIỀN THEO THÁNG (triệu đồng)",
-    monthlyLines || "   (chưa có dữ liệu)",
+    RULE,
     "",
-    "3. CÔNG NỢ HIỆN TẠI",
-    `   • Phải thu (khách hàng):    ${fmtVND(d.arTotal)}`,
-    `   • Phải trả (nhà cung cấp):  ${fmtVND(d.apTotal)}`,
+    "I.  TỔNG QUAN",
     "",
-    "— Báo cáo tạo tự động từ ERP-CRM AIECOS.",
+    `      • Doanh thu:  ${m(d.sum.revenue)}`,
+    `      • Chi phí thực:  ${m(d.sum.expense)}`,
+    `      • Hoá đơn đầu vào đã có (${d.sum.coverage}%):  ${m(d.sum.invoiceIn)}`,
+    `      • GAP — chi phí chưa có hoá đơn:  ${m(d.sum.gap)}`,
+    `      • Thuế TNDN tiết kiệm nếu bù đủ GAP (~20%):  ${m(d.sum.taxSaving)}`,
+    "",
+    "II.  DÒNG TIỀN THEO THÁNG    (đơn vị: triệu đồng)",
+    "",
+    monthlyLines,
+    "",
+    "III.  CÔNG NỢ HIỆN TẠI",
+    "",
+    `      • Phải thu (khách hàng):  ${fmtVND(d.arTotal)}`,
+    `      • Phải trả (nhà cung cấp):  ${fmtVND(d.apTotal)}`,
+    "",
+    RULE,
+    "",
+    `Báo cáo được tạo tự động từ hệ thống ERP-CRM AIECOS · ${d.dateStr}`,
   ].join("\n");
 }
