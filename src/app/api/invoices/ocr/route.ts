@@ -20,6 +20,8 @@ const MEDIA = new Set([
   "image/png",
   "image/webp",
   "image/gif",
+  "image/heic",
+  "image/heif",
   "application/pdf",
 ]);
 
