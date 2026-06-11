@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { TrendingUp, Wallet, FileCheck2, AlertCircle, PiggyBank } from "lucide-react";
+import { TrendingUp, Wallet, FileCheck2, AlertCircle, PiggyBank, Download, FileText, Loader2 } from "lucide-react";
 import { Topbar } from "@/components/topbar";
 import { GapChart } from "@/components/reports/gap-chart";
 import { GapTable } from "@/components/reports/gap-table";
@@ -22,7 +22,27 @@ const periodShort: Record<PeriodKey, string> = {
 
 export function ReportsClient({ rows }: { rows: GapRow[] }) {
   const [period, setPeriod] = useState<PeriodKey>("quarter");
+  const [creating, setCreating] = useState(false);
   const sum = getPeriodSummary(period, rows);
+
+  async function createGoogleDoc() {
+    setCreating(true);
+    try {
+      const res = await fetch(`/api/reports/gdoc?period=${period}`, {
+        method: "POST",
+      });
+      const json = await res.json();
+      if (json.ok && json.url) {
+        window.open(json.url, "_blank", "noopener");
+      } else {
+        alert(json.error || "Không tạo được Google Doc.");
+      }
+    } catch (e) {
+      alert("Lỗi tạo Google Doc: " + (e as Error).message);
+    } finally {
+      setCreating(false);
+    }
+  }
 
   return (
     <>
@@ -30,21 +50,44 @@ export function ReportsClient({ rows }: { rows: GapRow[] }) {
         title="Báo cáo Gap hoá đơn"
         subtitle={periodLabel[period]}
         action={
-          <div className="bg-[var(--primary-soft)] rounded-2xl p-1 flex gap-1 text-xs font-semibold">
-            {periods.map((p) => (
-              <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={cn(
-                  "px-4 py-2 rounded-xl transition-all",
-                  period === p
-                    ? "bg-white text-[var(--primary)] shadow-sm"
-                    : "text-[var(--muted)] hover:text-[var(--primary)]"
-                )}
-              >
-                {periodShort[p]}
-              </button>
-            ))}
+          <div className="flex items-center gap-2">
+            <div className="bg-[var(--primary-soft)] rounded-2xl p-1 flex gap-1 text-xs font-semibold">
+              {periods.map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPeriod(p)}
+                  className={cn(
+                    "px-4 py-2 rounded-xl transition-all",
+                    period === p
+                      ? "bg-white text-[var(--primary)] shadow-sm"
+                      : "text-[var(--muted)] hover:text-[var(--primary)]"
+                  )}
+                >
+                  {periodShort[p]}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={createGoogleDoc}
+              disabled={creating}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-[var(--primary)] text-white text-xs font-semibold hover:bg-[var(--primary-deep)] transition-colors shadow-sm disabled:opacity-60"
+            >
+              {creating ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <FileText className="w-4 h-4" />
+              )}
+              {creating ? "Đang tạo..." : "Xuất Google Doc"}
+            </button>
+            <a
+              href={`/api/reports/docx?period=${period}`}
+              download
+              title="Tải file Word về máy"
+              className="flex items-center gap-1.5 px-3 py-2.5 rounded-2xl bg-white border border-[var(--border)] text-[var(--muted)] text-xs font-semibold hover:text-[var(--primary)] transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              .docx
+            </a>
           </div>
         }
       />
