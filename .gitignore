@@ -39,6 +39,20 @@ yarn-error.log*
 supabase/_data.json
 supabase/_clean.xlsx
 
+# Google service account key — KHÔNG commit (chứa private key)
+*.iam.gserviceaccount.com.json
+*-s1-*.json
+*service-account*.json
+gcp-*.json
+
+# Google OAuth — KHÔNG commit
+oauth_client.json
+client_secret*.json
+supabase/_oauth_token.txt
+
+# n8n workflow JSON — chứa SYNC_SECRET + webhook URL, giữ local
+n8n/
+
 # vercel
 .vercel
 

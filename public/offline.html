@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ngoại tuyến · ERP-CRM</title>
+    <style>
+      :root { color-scheme: light; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; min-height: 100vh; display: flex; align-items: center;
+        justify-content: center; padding: 24px;
+        font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+        background: #eef0fb; color: #1c1b3a;
+      }
+      .card {
+        background: #fff; border-radius: 24px; padding: 40px 32px; max-width: 380px;
+        text-align: center; box-shadow: 0 10px 40px -10px rgba(91,79,207,.18);
+      }
+      .icon {
+        width: 72px; height: 72px; margin: 0 auto 20px; border-radius: 20px;
+        background: linear-gradient(160deg,#5b4fcf,#3f35a8); display: flex;
+        align-items: center; justify-content: center; font-size: 34px;
+      }
+      h1 { font-size: 20px; margin: 0 0 8px; }
+      p { color: #6b6a8a; font-size: 14px; line-height: 1.6; margin: 0 0 24px; }
+      button {
+        border: 0; cursor: pointer; padding: 12px 24px; border-radius: 9999px;
+        background: #5b4fcf; color: #fff; font-size: 14px; font-weight: 600;
+        font-family: inherit;
+      }
+      button:hover { background: #3f35a8; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="icon">📊</div>
+      <h1>Đang ngoại tuyến</h1>
+      <p>
+        Không có kết nối mạng. Dữ liệu tài chính cần internet để hiển thị chính xác.
+        Hãy kiểm tra kết nối rồi thử lại.
+      </p>
+      <button onclick="location.reload()">Thử lại</button>
+    </div>
+  </body>
+</html>

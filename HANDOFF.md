@@ -70,7 +70,32 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon key — public, an toàn>
 
 **SQL đã chạy (trong `supabase/`):** `schema.sql` → `policies_open.sql` → `migration_crm.sql` → `migration_modules.sql`. Chạy lại an toàn (idempotent). Mở SQL Editor: https://supabase.com/dashboard/project/verrksogurlxraawdhni/sql/new
 
-### Pipeline nạp dữ liệu (từ file gốc `Quản trị tài chính.xlsx`)
+## 4b. Tích hợp Lark (🟢 LIVE — nguồn dữ liệu chính)
+
+Dữ liệu thật đến từ **Lark Base "Quản trị tài chính"** (`AgenAI`), đồng bộ 1 chiều
+**Lark → Supabase** (mô hình A). Lark là nơi NHẬP, web chỉ đọc Supabase (giữ tốc độ + views).
+
+- **Lark app:** `ERP-billing` (Custom App, đã release + admin duyệt scope `bitable:app:readonly`).
+  Host **larksuite quốc tế** → `https://open.larksuite.com`.
+- **Env (server-only, có trong `.env.local` + Vercel):** `LARK_APP_ID=cli_aaacd24145789e15`,
+  `LARK_APP_SECRET=…`, `LARK_BASE_TOKEN=LsipbJ26HaogeVs2hX0jjGQxpbb` (= app_token trong link base),
+  `SYNC_SECRET=…` (bảo vệ endpoint sync).
+- **Code:** `src/lib/lark/client.ts` (token cache + list tables/records), `src/lib/lark/sync.ts`
+  (đọc bảng Lark → map → ghi đè Supabase; helper txt/num/dateISO xử lý field Lark:
+  date = timestamp ms, linked-record = object `{text}`, số = string).
+- **Endpoint:** `POST /api/lark/sync` (kéo Lark→Supabase; cần header `x-sync-secret` nếu gọi từ
+  ngoài, nút web same-origin miễn). `GET /api/lark/discover` (dò bảng/field — dùng khi cần map lại).
+- **Trigger:** nút **"Đồng bộ ngay"** trong `/settings` (LarkSyncCard) · hoặc **n8n** gọi
+  `/api/lark/sync` định kỳ (header `x-sync-secret`) — chưa bật, user tự dựng.
+- **Mapping (tên bảng/cột Lark tiếng Việt → Supabase):** 01.Chi phí→invoices_in+expenses ·
+  02.Doanh thu→invoices_out (tên KH cụt "Công ty " → khớp prefix về tên đầy đủ trong companies) ·
+  03.Khách hàng→companies · 04.Vendors→suppliers (trống thì derive từ Chi phí) ·
+  14.Trung tâm chi phí→cost_centers · 05.Tài khoản NH→bank_accounts · 09.Tạm ứng→advances.
+  Table IDs: Chi phí `tblqLkXZQVvW5G2k`, Doanh thu `tbl4z3Ch0elwKbmP` (resolve động theo tên, không hardcode).
+- **Cập nhật khi Lark đổi:** bấm "Đồng bộ ngay" (hoặc đợi n8n). Sync = TRUNCATE + insert (Lark là chân lý).
+- ⚠️ App Secret đã từng dán trong chat → có thể Regenerate trong Lark + cập nhật env nếu cần.
+
+### Pipeline nạp dữ liệu (từ file gốc `Quản trị tài chính.xlsx` — cách CŨ, vẫn dùng được)
 ```bash
 # Yêu cầu: PYTHONUTF8=1 (Windows)
 python supabase/_extract.py      # xlsx -> supabase/_data.json (đã gỡ dataValidations lỗi của Lark)
