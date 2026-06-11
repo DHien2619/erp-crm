@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { X, Upload, Sparkles, FileImage, Loader2 } from "lucide-react";
-import { categoryLabel, type InvoiceIn } from "@/lib/mock-data";
+import { categoryLabel, type InvoiceIn, type InvoiceCategory } from "@/lib/mock-data";
 import { createClient } from "@/lib/supabase/client";
 import type { InvoiceCategoryDb, InvoiceStatus } from "@/lib/database.types";
 import { CustomSelect, type SelectOption } from "@/components/ui/select";
@@ -26,6 +26,19 @@ const statusFormOptions: SelectOption[] = [
 
 type Tab = "upload" | "manual";
 
+/** Đọc file -> base64 thuần (bỏ tiền tố data:...;base64,). */
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const s = String(reader.result);
+      resolve(s.slice(s.indexOf(",") + 1));
+    };
+    reader.onerror = () => reject(new Error("Không đọc được file."));
+    reader.readAsDataURL(file);
+  });
+}
+
 export function AddInvoiceModal({
   open,
   onClose,
@@ -37,6 +50,55 @@ export function AddInvoiceModal({
 }) {
   const [tab, setTab] = useState<Tab>(editing ? "manual" : "upload");
   const [dragOver, setDragOver] = useState(false);
+  const [ocrLoading, setOcrLoading] = useState(false);
+  const [ocrError, setOcrError] = useState<string | null>(null);
+  const [draft, setDraft] = useState<InvoiceIn | undefined>(undefined);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  async function handleFile(file: File | undefined) {
+    if (!file) return;
+    setOcrError(null);
+    if (file.size > 10 * 1024 * 1024) {
+      setOcrError("File quá lớn (tối đa 10MB).");
+      return;
+    }
+    setOcrLoading(true);
+    try {
+      const data = await fileToBase64(file);
+      const res = await fetch("/api/invoices/ocr", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ media_type: file.type, data }),
+      });
+      const json = await res.json();
+      if (!json.ok) {
+        setOcrError(json.error || "Bóc tách thất bại.");
+        return;
+      }
+      const f = json.fields ?? {};
+      const conf =
+        typeof f.confidence === "number"
+          ? ` (độ tin ${Math.round(f.confidence * 100)}%)`
+          : "";
+      setDraft({
+        id: "",
+        code: f.code ?? "",
+        supplier: f.supplier_name ?? "",
+        initials: "",
+        category: (f.category ?? "other") as InvoiceCategory,
+        date: f.invoice_date ?? "",
+        amount: Number(f.amount) || 0,
+        vatRate: Number(f.vat_rate) || 10,
+        status: "pending",
+        note: `Bóc tách từ ảnh bằng AI${conf} — kiểm tra lại trước khi lưu.`,
+      });
+      setTab("manual");
+    } catch (e) {
+      setOcrError((e as Error).message);
+    } finally {
+      setOcrLoading(false);
+    }
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -117,36 +179,63 @@ export function AddInvoiceModal({
         <div className="p-6">
           {tab === "upload" && !editing ? (
             <div>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
+                className="hidden"
+                onChange={(e) => handleFile(e.target.files?.[0])}
+              />
               <div
                 onDragOver={(e) => {
                   e.preventDefault();
-                  setDragOver(true);
+                  if (!ocrLoading) setDragOver(true);
                 }}
                 onDragLeave={() => setDragOver(false)}
                 onDrop={(e) => {
                   e.preventDefault();
                   setDragOver(false);
+                  if (!ocrLoading) handleFile(e.dataTransfer.files?.[0]);
                 }}
+                onClick={() => !ocrLoading && fileRef.current?.click()}
                 className={cn(
-                  "border-2 border-dashed rounded-3xl p-10 text-center transition-colors",
+                  "border-2 border-dashed rounded-3xl p-10 text-center transition-colors cursor-pointer",
                   dragOver
                     ? "border-[var(--primary)] bg-[var(--primary-soft)]"
-                    : "border-[var(--border)] bg-[var(--primary-soft)]/30"
+                    : "border-[var(--border)] bg-[var(--primary-soft)]/30",
+                  ocrLoading && "opacity-70 pointer-events-none"
                 )}
               >
                 <div className="w-16 h-16 mx-auto rounded-2xl bg-white flex items-center justify-center shadow-sm mb-4">
-                  <Upload className="w-7 h-7 text-[var(--primary)]" />
+                  {ocrLoading ? (
+                    <Loader2 className="w-7 h-7 text-[var(--primary)] animate-spin" />
+                  ) : (
+                    <Upload className="w-7 h-7 text-[var(--primary)]" />
+                  )}
                 </div>
                 <p className="font-semibold text-[var(--foreground)]">
-                  Kéo thả ảnh/PDF hoá đơn vào đây
+                  {ocrLoading
+                    ? "AI đang bóc tách hoá đơn..."
+                    : "Kéo thả ảnh/PDF hoá đơn vào đây"}
                 </p>
                 <p className="text-xs text-[var(--muted)] mt-1">
                   hoặc click để chọn từ máy. Hỗ trợ JPG, PNG, PDF — tối đa 10MB
                 </p>
-                <button className="mt-4 h-10 px-5 rounded-2xl bg-[var(--primary)] text-white text-sm font-semibold hover:bg-[var(--primary-deep)]">
-                  Chọn file
-                </button>
+                {!ocrLoading && (
+                  <button
+                    type="button"
+                    className="mt-4 h-10 px-5 rounded-2xl bg-[var(--primary)] text-white text-sm font-semibold hover:bg-[var(--primary-deep)]"
+                  >
+                    Chọn file
+                  </button>
+                )}
               </div>
+
+              {ocrError && (
+                <p className="mt-3 text-xs text-rose-500 bg-rose-50 rounded-xl px-4 py-2.5">
+                  {ocrError}
+                </p>
+              )}
 
               <div className="mt-4 flex items-start gap-3 p-4 bg-[var(--accent-soft)] rounded-2xl">
                 <Sparkles className="w-4 h-4 text-[var(--accent)] mt-0.5 shrink-0" />
@@ -166,7 +255,7 @@ export function AddInvoiceModal({
               </div>
             </div>
           ) : (
-            <ManualForm onClose={onClose} initial={editing} />
+            <ManualForm onClose={onClose} initial={editing ?? draft} />
           )}
         </div>
       </div>
