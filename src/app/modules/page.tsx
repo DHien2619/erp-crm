@@ -7,6 +7,7 @@ import {
   ArrowLeftRight,
   PieChart,
   BarChart3,
+  Banknote,
   ChevronRight,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
@@ -18,18 +19,20 @@ import {
   getPaymentRequests,
   getTransactions,
   getBudgets,
+  getBankTransactions,
 } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
 export default async function ModulesPage() {
-  const [adv, cc, ba, pr, tx, bg] = await Promise.all([
+  const [adv, cc, ba, pr, tx, bg, bt] = await Promise.all([
     getAdvances(),
     getCostCenters(),
     getBankAccounts(),
     getPaymentRequests(),
     getTransactions(),
     getBudgets(),
+    getBankTransactions(),
   ]);
 
   const modules = [
@@ -38,6 +41,7 @@ export default async function ModulesPage() {
     { href: "/modules/bank-accounts", icon: Landmark, name: "Tài khoản ngân hàng", desc: "Quỹ & số dư tài khoản", count: ba.length, tone: "emerald" },
     { href: "/modules/payment-requests", icon: FileCheck, name: "Yêu cầu thanh toán", desc: "Đề nghị chi & duyệt", count: pr.length, tone: "amber" },
     { href: "/modules/transactions", icon: ArrowLeftRight, name: "Giao dịch thanh toán", desc: "Sổ thu – chi thực tế", count: tx.length, tone: "pink" },
+    { href: "/modules/bank", icon: Banknote, name: "Biến động số dư", desc: "Tiền vào/ra ngân hàng (SePay)", count: bt.length, tone: "rose" },
     { href: "/modules/budgets", icon: PieChart, name: "Kế hoạch ngân sách", desc: "Ngân sách vs thực chi", count: bg.length, tone: "cyan" },
     { href: "/reports", icon: BarChart3, name: "KQHĐ kinh doanh", desc: "Báo cáo lãi/lỗ theo kỳ", count: null, tone: "violet" },
   ];
@@ -49,6 +53,7 @@ export default async function ModulesPage() {
     amber: "bg-amber-100 text-amber-600",
     pink: "bg-pink-100 text-pink-600",
     cyan: "bg-cyan-100 text-cyan-600",
+    rose: "bg-rose-100 text-rose-600",
   };
 
   return (

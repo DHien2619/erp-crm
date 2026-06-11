@@ -155,6 +155,24 @@ export type Transaction = {
   created_at: string;
 };
 
+export type BankTransaction = {
+  id: string;
+  sepay_id: number | null;
+  gateway: string | null; // tên ngân hàng
+  account_number: string | null;
+  sub_account: string | null;
+  txn_date: string | null;
+  amount: number; // luôn dương
+  direction: "in" | "out";
+  content: string | null; // nội dung CK (memo)
+  counterparty: string | null; // đối tác (parse từ memo, có thể null)
+  accumulated: number | null; // số dư sau giao dịch
+  reference_code: string | null;
+  code: string | null;
+  raw: Record<string, unknown> | null;
+  created_at: string;
+};
+
 export type Budget = {
   id: string;
   code: string | null;
@@ -214,6 +232,7 @@ export type Database = {
       payment_requests: Row<PaymentRequest>;
       transactions: Row<Transaction>;
       budgets: Row<Budget>;
+      bank_transactions: Row<BankTransaction>;
     };
     Views: {
       monthly_gap: { Row: MonthlyGap; Relationships: [] };

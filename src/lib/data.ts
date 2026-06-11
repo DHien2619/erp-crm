@@ -13,6 +13,7 @@ import type {
   PaymentRequest,
   Transaction,
   Budget,
+  BankTransaction,
 } from "@/lib/database.types";
 import type {
   InvoiceIn,
@@ -338,4 +339,16 @@ export async function getTotalOpeningBalance(): Promise<number> {
   const { data, error } = await supabase.from("bank_accounts").select("opening_balance");
   if (error) throw new Error(`getTotalOpeningBalance: ${error.message}`);
   return (data ?? []).reduce((s, b) => s + Number(b.opening_balance), 0);
+}
+
+/** Biến động số dư ngân hàng (SePay). Trả [] nếu bảng chưa tạo (chưa chạy migration). */
+export async function getBankTransactions(limit = 200): Promise<BankTransaction[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("bank_transactions")
+    .select("*")
+    .order("txn_date", { ascending: false })
+    .limit(limit);
+  if (error) return []; // bảng chưa tồn tại -> rỗng (không vỡ trang)
+  return (data ?? []) as BankTransaction[];
 }
