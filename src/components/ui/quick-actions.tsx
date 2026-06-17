@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Plus,
@@ -14,6 +13,7 @@ import {
   Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { openQuickModal } from "@/lib/ui-events";
 
 export function QuickActions() {
   const router = useRouter();
@@ -46,29 +46,32 @@ export function QuickActions() {
     }
   }
 
-  const links = [
-    { icon: FileText, label: "Thêm hoá đơn", href: "/invoices/in" },
-    { icon: Receipt, label: "Ghi doanh thu", href: "/customers" },
-    { icon: BarChart3, label: "Báo cáo Gap", href: "/reports" },
-    { icon: Target, label: "Đề xuất chiến lược", href: "/strategy" },
+  // run() thực thi NGAY (mở form / điều hướng), không bắt bấm 2 lần
+  const actions = [
+    { label: "Thêm hoá đơn", icon: FileText, tone: "violet", run: () => openQuickModal("invoice") },
+    { label: "Ghi doanh thu", icon: Receipt, tone: "violet", run: () => openQuickModal("revenue") },
+    { label: "Báo cáo Gap", icon: BarChart3, tone: "violet", run: () => router.push("/reports") },
+    { label: "Đề xuất chiến lược", icon: Target, tone: "violet", run: () => router.push("/strategy") },
   ];
 
   return (
     <div ref={ref} className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-3">
       {open && (
         <div className="flex flex-col items-end gap-2 mb-1">
-          {links.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              onClick={() => setOpen(false)}
+          {actions.map((a) => (
+            <button
+              key={a.label}
+              onClick={() => {
+                setOpen(false);
+                a.run();
+              }}
               className="flex items-center gap-2.5 bg-white rounded-full shadow-lg border border-[var(--border)] pl-4 pr-3 py-2.5 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--primary-soft)]/60 transition-colors"
             >
-              {l.label}
+              {a.label}
               <span className="w-8 h-8 rounded-full bg-[var(--primary-soft)] text-[var(--primary)] flex items-center justify-center">
-                <l.icon className="w-4 h-4" />
+                <a.icon className="w-4 h-4" />
               </span>
-            </Link>
+            </button>
           ))}
           <button
             onClick={sync}

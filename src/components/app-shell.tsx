@@ -1,9 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Menu } from "lucide-react";
 import { Sidebar } from "./sidebar";
 import { QuickActions } from "@/components/ui/quick-actions";
+import { AddInvoiceModal } from "@/components/invoices/add-invoice-modal";
+import { RevenueModal } from "@/components/customers/revenue-modal";
+import { onQuickModal, type QuickModal } from "@/lib/ui-events";
 
 export function AppShell({
   children,
@@ -13,6 +16,9 @@ export function AppShell({
   rightRail?: React.ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [quick, setQuick] = useState<QuickModal | null>(null);
+
+  useEffect(() => onQuickModal(setQuick), []);
 
   return (
     <div className="min-h-screen lg:flex">
@@ -53,6 +59,13 @@ export function AppShell({
       </div>
 
       <QuickActions />
+
+      {quick === "invoice" && (
+        <AddInvoiceModal open onClose={() => setQuick(null)} />
+      )}
+      {quick === "revenue" && (
+        <RevenueModal onClose={() => setQuick(null)} onSaved={() => setQuick(null)} />
+      )}
     </div>
   );
 }
