@@ -3,7 +3,11 @@
 > Internal tool quản trị tài chính AIECOS: theo dõi gap hoá đơn đầu vào, công nợ,
 > dự báo & đề xuất chiến lược. Next.js + Supabase.
 
-Cập nhật: 2026-06 · Tác giả khởi tạo: Claude (cho Duc Hien / AIECOS)
+Cập nhật: 2026-06-11 · Tác giả khởi tạo: Claude (cho Duc Hien / AIECOS)
+
+> **Phiên 2026-06-11 thêm:** PWA (cài app) · Export báo cáo .docx + Google Doc (qua n8n) ·
+> OCR hoá đơn từ ảnh (Gemini, upload nhiều cùng lúc) · Tích hợp **SePay** (biến động số dư
+> ngân hàng → ERP). Chi tiết ở mục 4c–4e + 6.
 
 ---
 

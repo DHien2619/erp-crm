@@ -88,7 +88,7 @@ export function NotificationsBell() {
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label="Thông báo"
-        className="relative w-11 h-11 rounded-2xl bg-white/70 backdrop-blur border border-[var(--border)] flex items-center justify-center text-[var(--muted)] hover:text-[var(--primary)] transition-colors"
+        className="relative w-11 h-11 rounded-2xl bg-white border border-[var(--border)] flex items-center justify-center text-[var(--muted)] hover:text-[var(--primary)] transition-colors"
       >
         <Bell className="w-5 h-5" />
         {alerts.length > 0 && (

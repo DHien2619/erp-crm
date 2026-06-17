@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Menu } from "lucide-react";
 import { Sidebar } from "./sidebar";
+import { QuickActions } from "@/components/ui/quick-actions";
 
 export function AppShell({
   children,
@@ -26,7 +27,7 @@ export function AppShell({
       {mobileOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex">
           <div
-            className="absolute inset-0 bg-[var(--foreground)]/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-[var(--foreground)]/50"
             onClick={() => setMobileOpen(false)}
           />
           <div className="relative z-10 p-3 h-full">
@@ -50,6 +51,8 @@ export function AppShell({
         </main>
         {rightRail}
       </div>
+
+      <QuickActions />
     </div>
   );
 }

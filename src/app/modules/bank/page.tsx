@@ -1,102 +1,21 @@
 import { ArrowDownLeft, ArrowUpRight, Wallet, Info } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Topbar } from "@/components/topbar";
-import { DataTable, type Column } from "@/components/ui/data-table";
+import { BankTransactionsClient } from "@/components/bank/bank-transactions-client";
 import { getBankTransactions } from "@/lib/data";
-import type { BankTransaction } from "@/lib/database.types";
 import { formatVND } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
-
-function fmtDateTime(iso: string | null): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return "—";
-  return new Intl.DateTimeFormat("vi-VN", {
-    timeZone: "Asia/Ho_Chi_Minh",
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(d);
-}
 
 export default async function BankTransactionsPage() {
   const rows = await getBankTransactions();
   const totalIn = rows.filter((r) => r.direction === "in").reduce((s, r) => s + Number(r.amount), 0);
   const totalOut = rows.filter((r) => r.direction === "out").reduce((s, r) => s + Number(r.amount), 0);
-  const latestBalance = rows.find((r) => r.accumulated != null)?.accumulated ?? null;
-
-  const cols: Column<BankTransaction>[] = [
-    {
-      key: "date",
-      label: "Thời gian",
-      render: (r) => <span className="text-[var(--muted)] whitespace-nowrap">{fmtDateTime(r.txn_date)}</span>,
-    },
-    {
-      key: "dir",
-      label: "Chiều",
-      align: "center",
-      render: (r) => (
-        <span
-          className={`text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${
-            r.direction === "in" ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
-          }`}
-        >
-          {r.direction === "in" ? "Tiền vào" : "Tiền ra"}
-        </span>
-      ),
-    },
-    {
-      key: "amount",
-      label: "Số tiền",
-      align: "right",
-      render: (r) => (
-        <span className={`font-semibold whitespace-nowrap ${r.direction === "in" ? "text-emerald-600" : "text-rose-600"}`}>
-          {r.direction === "in" ? "+" : "−"}
-          {formatVND(Number(r.amount))}
-        </span>
-      ),
-    },
-    {
-      key: "content",
-      label: "Nội dung / Đối tác",
-      render: (r) => (
-        <span className="text-[var(--foreground)] block max-w-[280px] truncate" title={r.content ?? ""}>
-          {r.counterparty || r.content || "—"}
-        </span>
-      ),
-    },
-    {
-      key: "account",
-      label: "Tài khoản",
-      render: (r) => (
-        <span className="text-[var(--muted)] whitespace-nowrap">
-          {r.gateway || "—"}
-          {r.account_number ? ` · ${r.account_number}` : ""}
-        </span>
-      ),
-    },
-    {
-      key: "balance",
-      label: "Số dư sau",
-      align: "right",
-      render: (r) => (
-        <span className="text-[var(--muted)] whitespace-nowrap">
-          {r.accumulated != null ? formatVND(Number(r.accumulated)) : "—"}
-        </span>
-      ),
-    },
-    {
-      key: "ref",
-      label: "Mã GD",
-      render: (r) => <span className="text-[11px] text-[var(--muted-soft)]">{r.reference_code || "—"}</span>,
-    },
-  ];
+  const latestBalance = rows.find((r) => r.accumulated != null && Number(r.accumulated) > 0)?.accumulated ?? null;
 
   return (
     <AppShell>
-      <Topbar title="Biến động số dư" subtitle="Tiền vào / ra qua ngân hàng (SePay)" />
+      <Topbar title="Biến động số dư" subtitle="Tiền vào / ra qua ngân hàng (SePay) · bấm 1 dòng để xem chi tiết" />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
         <StatCard icon={<ArrowDownLeft className="w-5 h-5" />} label="Tổng tiền vào" value={formatVND(totalIn)} tone="in" />
@@ -110,15 +29,14 @@ export default async function BankTransactionsPage() {
           <div className="text-[var(--muted)]">
             <p className="font-semibold text-[var(--foreground)]">Chưa có biến động nào.</p>
             <p className="mt-0.5">
-              Cần: (1) chạy <code className="text-[var(--primary)]">supabase/migration_sepay.sql</code> trong Supabase, rồi
-              (2) tạo tài khoản SePay → nối ngân hàng → trỏ Webhook về
-              <code className="text-[var(--primary)]"> /api/sepay/webhook</code>. Sau đó tiền vào/ra sẽ tự hiện ở đây.
+              Cấu hình Webhook SePay trỏ về <code className="text-[var(--primary)]">/api/sepay/webhook</code>.
+              Sau đó mỗi giao dịch vào/ra sẽ tự hiện ở đây.
             </p>
           </div>
         </div>
       )}
 
-      <DataTable columns={cols} rows={rows} empty="Chưa có biến động số dư." />
+      <BankTransactionsClient rows={rows} />
     </AppShell>
   );
 }

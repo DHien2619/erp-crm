@@ -16,6 +16,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { Topbar } from "@/components/topbar";
+import { NumberField } from "@/components/ui/number-field";
 import { CIT_RATE } from "@/lib/analytics";
 import type { StrategyData } from "@/lib/data";
 import { formatVND, cn } from "@/lib/utils";
@@ -265,7 +266,7 @@ function Num({ label, value, onChange }: { label: string; value: number; onChang
   return (
     <label className="flex flex-col gap-1.5">
       <span className="text-[11px] font-semibold text-[var(--muted)]">{label}</span>
-      <input type="number" value={value} onChange={(e) => onChange(Number(e.target.value))} className="erp-input h-10" />
+      <NumberField value={value} onChange={onChange} allowNegative className="h-10" />
     </label>
   );
 }

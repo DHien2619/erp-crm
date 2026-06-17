@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { TrendingUp, Wallet, PiggyBank, CalendarClock, Settings2 } from "lucide-react";
 import { Topbar } from "@/components/topbar";
+import { NumberField } from "@/components/ui/number-field";
 import { ForecastChart, type ForecastPoint } from "@/components/forecast/forecast-chart";
 import type { MonthlyPoint } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
@@ -162,12 +163,7 @@ function NumField({ label, value, onChange }: { label: string; value: number; on
   return (
     <label className="flex flex-col gap-1.5">
       <span className="text-[11px] font-semibold text-[var(--muted)]">{label}</span>
-      <input
-        type="number"
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="erp-input h-10"
-      />
+      <NumberField value={value} onChange={onChange} allowNegative className="h-10" />
     </label>
   );
 }

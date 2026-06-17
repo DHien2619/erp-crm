@@ -89,7 +89,7 @@ export function GlobalSearch() {
         onChange={(e) => setQ(e.target.value)}
         onFocus={() => results.length && setOpen(true)}
         placeholder="Tìm hoá đơn, khách, NCC...  (Ctrl+K)"
-        className="bg-white/70 backdrop-blur pl-11 pr-4 h-11 w-72 rounded-2xl text-sm border border-[var(--border)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/30 placeholder:text-[var(--muted-soft)]"
+        className="bg-white pl-11 pr-4 h-11 w-72 rounded-2xl text-sm border border-[var(--border)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/30 placeholder:text-[var(--muted-soft)]"
       />
 
       {open && q.trim().length >= 2 && (

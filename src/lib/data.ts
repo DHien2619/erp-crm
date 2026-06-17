@@ -348,6 +348,7 @@ export async function getBankTransactions(limit = 200): Promise<BankTransaction[
     .from("bank_transactions")
     .select("*")
     .order("txn_date", { ascending: false })
+    .order("sepay_id", { ascending: false }) // tie-break: cùng phút -> id lớn (mới) lên trước
     .limit(limit);
   if (error) return []; // bảng chưa tồn tại -> rỗng (không vỡ trang)
   return (data ?? []) as BankTransaction[];
