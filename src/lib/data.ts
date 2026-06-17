@@ -166,6 +166,46 @@ export async function getCashflowDaily(): Promise<DailyCashflow[]> {
   return [...map.values()].sort((a, b) => a.date.localeCompare(b.date));
 }
 
+/** Hoá đơn mua vào + bán ra đã chuẩn hoá cho báo cáo thuế (VND) */
+export async function getTaxInvoices() {
+  const supabase = await createClient();
+  const [inn, out] = await Promise.all([
+    supabase
+      .from("invoices_in")
+      .select("id, code, supplier_name, invoice_date, amount, vat_rate, status"),
+    supabase
+      .from("invoices_out")
+      .select("id, code, company_name, invoice_date, amount, vat_rate, status"),
+  ]);
+  if (inn.error) throw new Error(`getTaxInvoices/in: ${inn.error.message}`);
+  if (out.error) throw new Error(`getTaxInvoices/out: ${out.error.message}`);
+
+  const mk = (
+    r: { id: string; code: string | null; invoice_date: string | null; amount: number; vat_rate: number; status: DbInvoiceIn["status"] },
+    kind: "in" | "out",
+    partner: string
+  ) => {
+    const net = Number(r.amount);
+    const vatRate = Number(r.vat_rate);
+    return {
+      id: r.id,
+      kind,
+      code: r.code ?? "",
+      partner,
+      date: r.invoice_date,
+      net,
+      vatRate,
+      vat: Math.round((net * vatRate) / 100),
+      status: r.status,
+    };
+  };
+
+  return [
+    ...(inn.data ?? []).map((r) => mk(r, "in", r.supplier_name)),
+    ...(out.data ?? []).map((r) => mk(r, "out", r.company_name)),
+  ];
+}
+
 /** Doanh thu đầu ra */
 export async function getInvoicesOut(): Promise<DbInvoiceOut[]> {
   const supabase = await createClient();
