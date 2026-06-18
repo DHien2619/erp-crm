@@ -24,7 +24,11 @@ import { costCategoryMeta, projectStatusMeta } from "@/lib/projects";
 import { createClient } from "@/lib/supabase/client";
 import { formatFullVND, cn } from "@/lib/utils";
 import type { ProjectDetail } from "@/lib/data";
-import type { ProjectCostCategory } from "@/lib/database.types";
+import type {
+  ProjectCostCategory,
+  ProjectPayment,
+  ProjectCost,
+} from "@/lib/database.types";
 
 function fmtDate(iso: string | null) {
   if (!iso) return "—";
@@ -39,6 +43,8 @@ export function ProjectDetailClient({ detail }: { detail: ProjectDetail }) {
   const [editing, setEditing] = useState(false);
   const [addPay, setAddPay] = useState(false);
   const [addCost, setAddCost] = useState(false);
+  const [editPay, setEditPay] = useState<ProjectPayment | null>(null);
+  const [editCost, setEditCost] = useState<ProjectCost | null>(null);
 
   const value = Number(project.contract_value);
   const totalPaid = payments.reduce((s, p) => s + Number(p.amount), 0);
@@ -204,6 +210,7 @@ export function ProjectDetailClient({ detail }: { detail: ProjectDetail }) {
               left={p.label || "Thanh toán"}
               date={fmtDate(p.paid_at)}
               amount={formatFullVND(Number(p.amount))}
+              onEdit={() => setEditPay(p)}
               onDelete={() => removePayment(p.id)}
             />
           ))}
@@ -223,6 +230,7 @@ export function ProjectDetailClient({ detail }: { detail: ProjectDetail }) {
               tagColor={costCategoryMeta[c.category]?.color}
               date={fmtDate(c.spent_at)}
               amount={formatFullVND(Number(c.amount))}
+              onEdit={() => setEditCost(c)}
               onDelete={() => removeCost(c.id)}
             />
           ))}
@@ -234,6 +242,22 @@ export function ProjectDetailClient({ detail }: { detail: ProjectDetail }) {
       )}
       {addPay && <PaymentModal projectId={project.id} onClose={() => setAddPay(false)} onSaved={() => setAddPay(false)} />}
       {addCost && <CostModal projectId={project.id} onClose={() => setAddCost(false)} onSaved={() => setAddCost(false)} />}
+      {editPay && (
+        <PaymentModal
+          projectId={project.id}
+          editing={editPay}
+          onClose={() => setEditPay(null)}
+          onSaved={() => setEditPay(null)}
+        />
+      )}
+      {editCost && (
+        <CostModal
+          projectId={project.id}
+          editing={editCost}
+          onClose={() => setEditCost(null)}
+          onSaved={() => setEditCost(null)}
+        />
+      )}
     </>
   );
 }
@@ -275,6 +299,7 @@ function Row({
   tagColor,
   date,
   amount,
+  onEdit,
   onDelete,
 }: {
   left: string;
@@ -282,6 +307,7 @@ function Row({
   tagColor?: string;
   date: string;
   amount: string;
+  onEdit: () => void;
   onDelete: () => void;
 }) {
   return (
@@ -295,8 +321,15 @@ function Row({
         </p>
         <p className="text-xs text-[var(--muted)]">{date}</p>
       </div>
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="flex items-center gap-1.5 shrink-0">
         <span className="text-sm font-semibold tabular-nums">{amount}</span>
+        <button
+          onClick={onEdit}
+          aria-label="Sửa"
+          className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--muted-soft)] opacity-0 group-hover:opacity-100 hover:bg-[var(--primary-soft)] hover:text-[var(--primary)] transition"
+        >
+          <Pencil className="w-3.5 h-3.5" />
+        </button>
         <button
           onClick={onDelete}
           aria-label="Xoá"

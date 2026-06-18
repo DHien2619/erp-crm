@@ -11,7 +11,12 @@ import {
   costCategoryOptions,
   projectStatusOptions,
 } from "@/lib/projects";
-import type { Project, ProjectCostCategory } from "@/lib/database.types";
+import type {
+  Project,
+  ProjectCostCategory,
+  ProjectPayment,
+  ProjectCost,
+} from "@/lib/database.types";
 
 function Field({
   label,
@@ -146,13 +151,15 @@ export function ProjectModal({
   );
 }
 
-// ---------- Thêm đợt thanh toán ----------
+// ---------- Thêm / sửa đợt thanh toán ----------
 export function PaymentModal({
   projectId,
+  editing,
   onClose,
   onSaved,
 }: {
   projectId: string;
+  editing?: ProjectPayment;
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -166,14 +173,15 @@ export function PaymentModal({
     setSaving(true);
     const fd = new FormData(e.currentTarget);
     const payload = {
-      project_id: projectId,
       label: String(fd.get("label") || "").trim() || null,
       amount: Number(fd.get("amount") || 0),
       paid_at: String(fd.get("paid_at") || "") || null,
       note: String(fd.get("note") || "").trim() || null,
     };
     const supabase = createClient();
-    const { error } = await supabase.from("project_payments").insert(payload);
+    const { error } = editing
+      ? await supabase.from("project_payments").update(payload).eq("id", editing.id)
+      : await supabase.from("project_payments").insert({ ...payload, project_id: projectId });
     setSaving(false);
     if (error) return setError(error.message);
     router.refresh();
@@ -181,44 +189,51 @@ export function PaymentModal({
   }
 
   return (
-    <Modal open onClose={onClose} title="Ghi nhận thanh toán" subtitle="Khách hàng thanh toán theo đợt">
+    <Modal
+      open
+      onClose={onClose}
+      title={editing ? "Sửa đợt thanh toán" : "Ghi nhận thanh toán"}
+      subtitle="Khách hàng thanh toán theo đợt"
+    >
       <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Field label="Tên đợt" className="col-span-2">
-          <input name="label" required placeholder="VD: Đợt 1 (tạm ứng 40%)" className="erp-input" />
+          <input name="label" defaultValue={editing?.label ?? ""} required placeholder="VD: Đợt 1 (tạm ứng 40%)" className="erp-input" />
         </Field>
         <Field label="Số tiền (₫)">
-          <MoneyField name="amount" required />
+          <MoneyField name="amount" defaultValue={editing?.amount} required />
         </Field>
         <Field label="Ngày thanh toán">
-          <input name="paid_at" type="date" className="erp-input" />
+          <input name="paid_at" type="date" defaultValue={editing?.paid_at ?? ""} className="erp-input" />
         </Field>
         <Field label="Ghi chú" className="col-span-2">
-          <input name="note" placeholder="..." className="erp-input" />
+          <input name="note" defaultValue={editing?.note ?? ""} placeholder="..." className="erp-input" />
         </Field>
 
         {error && (
           <p className="col-span-2 text-xs text-rose-500 bg-rose-50 rounded-xl px-4 py-2.5">Lỗi: {error}</p>
         )}
-        <Actions saving={saving} onClose={onClose} label="Lưu thanh toán" />
+        <Actions saving={saving} onClose={onClose} label={editing ? "Lưu thay đổi" : "Lưu thanh toán"} />
       </form>
     </Modal>
   );
 }
 
-// ---------- Thêm chi phí ----------
+// ---------- Thêm / sửa chi phí ----------
 export function CostModal({
   projectId,
+  editing,
   onClose,
   onSaved,
 }: {
   projectId: string;
+  editing?: ProjectCost;
   onClose: () => void;
   onSaved: () => void;
 }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [category, setCategory] = useState<ProjectCostCategory>("ai_tools");
+  const [category, setCategory] = useState<ProjectCostCategory>(editing?.category ?? "ai_tools");
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -226,7 +241,6 @@ export function CostModal({
     setSaving(true);
     const fd = new FormData(e.currentTarget);
     const payload = {
-      project_id: projectId,
       category,
       name: String(fd.get("name") || "").trim() || null,
       amount: Number(fd.get("amount") || 0),
@@ -234,7 +248,9 @@ export function CostModal({
       note: String(fd.get("note") || "").trim() || null,
     };
     const supabase = createClient();
-    const { error } = await supabase.from("project_costs").insert(payload);
+    const { error } = editing
+      ? await supabase.from("project_costs").update(payload).eq("id", editing.id)
+      : await supabase.from("project_costs").insert({ ...payload, project_id: projectId });
     setSaving(false);
     if (error) return setError(error.message);
     router.refresh();
@@ -242,7 +258,12 @@ export function CostModal({
   }
 
   return (
-    <Modal open onClose={onClose} title="Thêm chi phí" subtitle="Chi phí thực hiện dự án">
+    <Modal
+      open
+      onClose={onClose}
+      title={editing ? "Sửa chi phí" : "Thêm chi phí"}
+      subtitle="Chi phí thực hiện dự án"
+    >
       <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Field label="Hạng mục" className="col-span-2">
           <CustomSelect
@@ -252,22 +273,22 @@ export function CostModal({
           />
         </Field>
         <Field label="Mô tả" className="col-span-2">
-          <input name="name" required placeholder="VD: ChatGPT Team + Claude" className="erp-input" />
+          <input name="name" defaultValue={editing?.name ?? ""} required placeholder="VD: ChatGPT Team + Claude" className="erp-input" />
         </Field>
         <Field label="Số tiền (₫)">
-          <MoneyField name="amount" required />
+          <MoneyField name="amount" defaultValue={editing?.amount} required />
         </Field>
         <Field label="Ngày chi">
-          <input name="spent_at" type="date" className="erp-input" />
+          <input name="spent_at" type="date" defaultValue={editing?.spent_at ?? ""} className="erp-input" />
         </Field>
         <Field label="Ghi chú" className="col-span-2">
-          <input name="note" placeholder="..." className="erp-input" />
+          <input name="note" defaultValue={editing?.note ?? ""} placeholder="..." className="erp-input" />
         </Field>
 
         {error && (
           <p className="col-span-2 text-xs text-rose-500 bg-rose-50 rounded-xl px-4 py-2.5">Lỗi: {error}</p>
         )}
-        <Actions saving={saving} onClose={onClose} label="Lưu chi phí" />
+        <Actions saving={saving} onClose={onClose} label={editing ? "Lưu thay đổi" : "Lưu chi phí"} />
       </form>
     </Modal>
   );
