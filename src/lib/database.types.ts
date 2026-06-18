@@ -251,6 +251,16 @@ export type ProjectCost = {
   created_at: string;
 };
 
+export type ErrorLog = {
+  id: string;
+  message: string;
+  stack: string | null;
+  context: Record<string, unknown> | null;
+  url: string | null;
+  user_agent: string | null;
+  created_at: string;
+};
+
 type Row<T> = {
   Row: T;
   Insert: Partial<T>;
@@ -276,6 +286,7 @@ export type Database = {
       projects: Row<Project>;
       project_payments: Row<ProjectPayment>;
       project_costs: Row<ProjectCost>;
+      error_logs: Row<ErrorLog>;
     };
     Views: {
       monthly_gap: { Row: MonthlyGap; Relationships: [] };

@@ -1,16 +1,11 @@
 "use client";
 
 import { FileCheck2, Wallet, AlertTriangle } from "lucide-react";
-import { type InvoiceIn } from "@/lib/mock-data";
 import { formatVND } from "@/lib/utils";
+import type { InvoicesInStats as Stats } from "@/lib/data";
 
-export function InvoicesInStats({ invoices }: { invoices: InvoiceIn[] }) {
-  const total = invoices.length;
-  const totalAmount = invoices.reduce((s, i) => s + i.amount, 0);
-  const missing = invoices.filter((i) => i.status === "missing").length;
-  const missingAmount = invoices
-    .filter((i) => i.status === "missing")
-    .reduce((s, i) => s + i.amount, 0);
+export function InvoicesInStats({ stats }: { stats: Stats }) {
+  const { total, totalAmount, missing, missingAmount } = stats;
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">

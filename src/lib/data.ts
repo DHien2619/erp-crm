@@ -67,6 +67,82 @@ export async function getInvoicesIn(): Promise<InvoiceIn[]> {
   return (data ?? []).map(mapInvoiceIn);
 }
 
+export type InvoicesInQuery = {
+  page?: number;
+  q?: string;
+  status?: string;
+  category?: string;
+  from?: string;
+  to?: string;
+  min?: string;
+  max?: string;
+};
+export type InvoicesInPage = {
+  rows: InvoiceIn[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+const INVOICES_PAGE_SIZE = 12;
+
+/** Hoá đơn đầu vào — phân trang + lọc + tìm kiếm SERVER-SIDE (chỉ tải đúng 1 trang). */
+export async function getInvoicesInPaged(p: InvoicesInQuery): Promise<InvoicesInPage> {
+  const supabase = await createClient();
+  const page = Math.max(1, Number(p.page) || 1);
+  const pageSize = INVOICES_PAGE_SIZE;
+
+  let query = supabase.from("invoices_in").select("*", { count: "exact" });
+
+  if (p.status && p.status !== "all")
+    query = query.eq("status", p.status as DbInvoiceIn["status"]);
+  if (p.category && p.category !== "all")
+    query = query.eq("category", p.category as DbInvoiceIn["category"]);
+  if (p.from) query = query.gte("invoice_date", p.from);
+  if (p.to) query = query.lte("invoice_date", p.to);
+  if (p.min) query = query.gte("amount", Number(p.min));
+  if (p.max) query = query.lte("amount", Number(p.max));
+  if (p.q) {
+    const safe = p.q.replace(/[,()%*]/g, " ").trim();
+    if (safe) query = query.or(`supplier_name.ilike.%${safe}%,code.ilike.%${safe}%`);
+  }
+
+  query = query
+    .order("invoice_date", { ascending: false, nullsFirst: false })
+    .range((page - 1) * pageSize, page * pageSize - 1);
+
+  const { data, error, count } = await query;
+  if (error) throw new Error(`getInvoicesInPaged: ${error.message}`);
+  return {
+    rows: (data ?? []).map(mapInvoiceIn),
+    total: count ?? 0,
+    page,
+    pageSize,
+  };
+}
+
+export type InvoicesInStats = {
+  total: number;
+  totalAmount: number;
+  missing: number;
+  missingAmount: number;
+};
+
+/** Tổng hợp toàn bộ hoá đơn đầu vào cho 3 card thống kê (không phụ thuộc trang). */
+export async function getInvoicesInStats(): Promise<InvoicesInStats> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("invoices_in").select("amount, status");
+  if (error) throw new Error(`getInvoicesInStats: ${error.message}`);
+  const rows = (data ?? []) as { amount: number; status: string }[];
+  const missingRows = rows.filter((r) => r.status === "missing");
+  return {
+    total: rows.length,
+    totalAmount: rows.reduce((s, r) => s + Number(r.amount), 0),
+    missing: missingRows.length,
+    missingAmount: missingRows.reduce((s, r) => s + Number(r.amount), 0),
+  };
+}
+
 /** 5 hoá đơn đầu vào gần nhất cho right rail Dashboard */
 export async function getRecentInvoices(limit = 5): Promise<RecentInvoice[]> {
   const supabase = await createClient();

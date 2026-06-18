@@ -1,103 +1,114 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Topbar } from "@/components/topbar";
 import { InvoicesInStats } from "@/components/invoices/in-stats";
-import { InvoicesInToolbar, type StatusFilter, type AdvFilter, emptyAdv } from "@/components/invoices/in-toolbar";
+import { InvoicesInToolbar, type StatusFilter, type AdvFilter } from "@/components/invoices/in-toolbar";
 import { InvoicesInTable } from "@/components/invoices/in-table";
 import { AddInvoiceModal } from "@/components/invoices/add-invoice-modal";
 import { createClient } from "@/lib/supabase/client";
 import { type InvoiceIn, type InvoiceCategory } from "@/lib/mock-data";
+import type { InvoicesInPage, InvoicesInStats as Stats, InvoicesInQuery } from "@/lib/data";
 
-const PAGE_SIZE = 12;
-
-export function InvoicesInClient({ invoices }: { invoices: InvoiceIn[] }) {
+export function InvoicesInClient({
+  data,
+  stats,
+  initial,
+}: {
+  data: InvoicesInPage;
+  stats: Stats;
+  initial: InvoicesInQuery;
+}) {
   const router = useRouter();
-  const [query, setQuery] = useState("");
-  const [status, setStatus] = useState<StatusFilter>("all");
-  const [category, setCategory] = useState<InvoiceCategory | "all">("all");
-  const [adv, setAdv] = useState<AdvFilter>(emptyAdv);
-  const [page, setPage] = useState(1);
+  const [isPending, startTransition] = useTransition();
+  const [query, setQuery] = useState(initial.q ?? "");
+  const [status, setStatus] = useState<StatusFilter>((initial.status as StatusFilter) ?? "all");
+  const [category, setCategory] = useState<InvoiceCategory | "all">(
+    (initial.category as InvoiceCategory | "all") ?? "all"
+  );
+  const [adv, setAdv] = useState<AdvFilter>({
+    from: initial.from ?? "",
+    to: initial.to ?? "",
+    min: initial.min ?? "",
+    max: initial.max ?? "",
+  });
   const [modal, setModal] = useState<{ editing?: InvoiceIn } | null>(null);
 
-  const rows = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const min = adv.min ? Number(adv.min) : null;
-    const max = adv.max ? Number(adv.max) : null;
-    return invoices.filter((i) => {
-      if (status !== "all" && i.status !== status) return false;
-      if (category !== "all" && i.category !== category) return false;
-      if (q && !i.supplier.toLowerCase().includes(q) && !i.code.toLowerCase().includes(q)) return false;
-      if (adv.from && (!i.date || i.date < adv.from)) return false;
-      if (adv.to && (!i.date || i.date > adv.to)) return false;
-      if (min !== null && i.amount < min) return false;
-      if (max !== null && i.amount > max) return false;
-      return true;
-    });
-  }, [invoices, query, status, category, adv]);
-
-  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
-  const safePage = Math.min(page, totalPages);
-  const pagedRows = rows.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
-
-  // reset về trang 1 khi đổi bộ lọc
-  function resetPage<T>(setter: (v: T) => void) {
-    return (v: T) => {
-      setter(v);
-      setPage(1);
-    };
+  // Tạo URL từ state hiện tại (đổi bộ lọc -> luôn về trang 1)
+  function buildUrl(page = 1) {
+    const params = new URLSearchParams();
+    if (query.trim()) params.set("q", query.trim());
+    if (status !== "all") params.set("status", status);
+    if (category !== "all") params.set("category", category);
+    if (adv.from) params.set("from", adv.from);
+    if (adv.to) params.set("to", adv.to);
+    if (adv.min) params.set("min", adv.min);
+    if (adv.max) params.set("max", adv.max);
+    if (page > 1) params.set("page", String(page));
+    const qs = params.toString();
+    return `/invoices/in${qs ? `?${qs}` : ""}`;
   }
+
+  // Đổi bộ lọc -> điều hướng server (debounce gộp gõ phím + đổi nhanh)
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    const t = setTimeout(() => startTransition(() => router.replace(buildUrl(1))), 350);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, status, category, adv]);
 
   async function handleDelete(r: InvoiceIn) {
     if (!confirm(`Xoá hoá đơn của "${r.supplier}"?`)) return;
-    const supabase = createClient();
-    await supabase.from("invoices_in").delete().eq("id", r.id);
+    await createClient().from("invoices_in").delete().eq("id", r.id);
     router.refresh();
   }
 
   async function handleToggle(r: InvoiceIn) {
     const next = r.status === "matched" ? "missing" : "matched";
-    const supabase = createClient();
-    await supabase.from("invoices_in").update({ status: next }).eq("id", r.id);
+    await createClient().from("invoices_in").update({ status: next }).eq("id", r.id);
     router.refresh();
   }
+
+  const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
 
   return (
     <>
       <Topbar title="Hoá đơn đầu vào" subtitle="Quản lý chi phí" />
 
-      <InvoicesInStats invoices={invoices} />
+      <InvoicesInStats stats={stats} />
 
       <InvoicesInToolbar
         query={query}
-        onQuery={resetPage(setQuery)}
+        onQuery={setQuery}
         status={status}
-        onStatus={resetPage(setStatus)}
+        onStatus={setStatus}
         category={category}
-        onCategory={resetPage(setCategory)}
+        onCategory={setCategory}
         onAdd={() => setModal({})}
         adv={adv}
-        onAdv={resetPage(setAdv)}
+        onAdv={setAdv}
       />
 
-      <InvoicesInTable
-        rows={pagedRows}
-        total={rows.length}
-        page={safePage}
-        totalPages={totalPages}
-        onPage={setPage}
-        onEdit={(r) => setModal({ editing: r })}
-        onDelete={handleDelete}
-        onToggleStatus={handleToggle}
-      />
+      <div className={isPending ? "opacity-50 transition-opacity pointer-events-none" : "transition-opacity"}>
+        <InvoicesInTable
+          rows={data.rows}
+          total={data.total}
+          page={data.page}
+          totalPages={totalPages}
+          onPage={(p) => startTransition(() => router.push(buildUrl(p)))}
+          onEdit={(r) => setModal({ editing: r })}
+          onDelete={handleDelete}
+          onToggleStatus={handleToggle}
+        />
+      </div>
 
       {modal && (
-        <AddInvoiceModal
-          open
-          editing={modal.editing}
-          onClose={() => setModal(null)}
-        />
+        <AddInvoiceModal open editing={modal.editing} onClose={() => setModal(null)} />
       )}
     </>
   );
