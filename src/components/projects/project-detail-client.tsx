@@ -53,6 +53,7 @@ export function ProjectDetailClient({ detail }: { detail: ProjectDetail }) {
   const paidPct = value ? Math.round((totalPaid / value) * 100) : 0;
   const unpaidPct = value ? Math.max(0, 100 - paidPct) : 0;
   const profit = totalPaid - totalCost;
+  const costPct = value ? Math.round((totalCost / value) * 100) : 0; // chi phí so với giá trị DA
 
   // cơ cấu chi phí theo hạng mục
   const byCategory = useMemo(() => {
@@ -132,7 +133,7 @@ export function ProjectDetailClient({ detail }: { detail: ProjectDetail }) {
           icon={<Wallet className="w-4 h-4" />}
           label="Tổng chi phí"
           value={formatFullVND(totalCost)}
-          sub={`${profit >= 0 ? "Lãi" : "Lỗ"} ${formatFullVND(Math.abs(profit))}`}
+          sub={`${costPct}% giá trị · ${profit >= 0 ? "Lãi" : "Lỗ"} ${formatFullVND(Math.abs(profit))}`}
           tone="default"
         />
       </div>
