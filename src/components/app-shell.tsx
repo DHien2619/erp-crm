@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Menu } from "lucide-react";
 import { Sidebar } from "./sidebar";
 import { QuickActions } from "@/components/ui/quick-actions";
+import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { AddInvoiceModal } from "@/components/invoices/add-invoice-modal";
 import { RevenueModal } from "@/components/customers/revenue-modal";
 import { onQuickModal, type QuickModal } from "@/lib/ui-events";
@@ -59,6 +60,7 @@ export function AppShell({
       </div>
 
       <QuickActions />
+      <RealtimeRefresh />
 
       {quick === "invoice" && (
         <AddInvoiceModal open onClose={() => setQuick(null)} />
