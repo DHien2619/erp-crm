@@ -4,26 +4,12 @@ import { OverviewChart } from "@/components/overview-chart";
 import { ExpenseCard, GapCard } from "@/components/gap-card";
 import { SupplierCards } from "@/components/supplier-card";
 import { RightRail } from "@/components/right-rail";
-import { getSupplierStats } from "@/lib/analytics";
-import {
-  getInvoicesIn,
-  getCashflowDaily,
-  getRecentInvoices,
-  getRecentInvoicesOut,
-  getCurrentMonthSummary,
-} from "@/lib/data";
+import { getDashboardData } from "@/lib/dashboard-cache";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [daily, summary, invoices, recentIn, recentOut] = await Promise.all([
-    getCashflowDaily(),
-    getCurrentMonthSummary(),
-    getInvoicesIn(),
-    getRecentInvoices(5),
-    getRecentInvoicesOut(5),
-  ]);
-  const supplierStats = getSupplierStats(invoices);
+  const { daily, summary, supplierStats, recentIn, recentOut } = await getDashboardData();
 
   return (
     <AppShell rightRail={<RightRail recentIn={recentIn} recentOut={recentOut} />}>

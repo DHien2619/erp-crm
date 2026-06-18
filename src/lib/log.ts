@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { createClient } from "@/lib/supabase/client";
 
 /**
@@ -17,6 +18,8 @@ export async function logError(err: unknown, context: Record<string, unknown> = 
     };
     // ghi console để xem nhanh trong Vercel logs / devtools
     if (typeof console !== "undefined") console.error("[ERP error]", payload.message, context);
+    // gửi Sentry (no-op nếu chưa cấu hình DSN)
+    Sentry.captureException(err, { extra: context });
     await createClient().from("error_logs").insert(payload);
   } catch {
     // nuốt — không để việc ghi log gây lỗi tiếp
