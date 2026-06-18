@@ -42,8 +42,20 @@ export function ProjectsClient({ projects }: { projects: ProjectWithStats[] }) {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         <Stat icon={<FolderKanban className="w-4 h-4" />} label="Số dự án" value={String(projects.length)} tone="primary" />
         <Stat icon={<CircleDollarSign className="w-4 h-4" />} label="Tổng giá trị" value={formatFullVND(totalValue)} tone="default" />
-        <Stat icon={<Wallet className="w-4 h-4" />} label="Đã thu" value={formatFullVND(totalPaid)} tone="default" />
-        <Stat icon={<TrendingUp className="w-4 h-4" />} label="Tổng chi phí" value={formatFullVND(totalCost)} tone="accent" />
+        <Stat
+          icon={<Wallet className="w-4 h-4" />}
+          label="Đã thu"
+          value={formatFullVND(totalPaid)}
+          sub={`${totalValue ? Math.round((totalPaid / totalValue) * 100) : 0}% tổng giá trị`}
+          tone="default"
+        />
+        <Stat
+          icon={<TrendingUp className="w-4 h-4" />}
+          label="Tổng chi phí"
+          value={formatFullVND(totalCost)}
+          sub={`${totalValue ? Math.round((totalCost / totalValue) * 100) : 0}% tổng giá trị`}
+          tone="accent"
+        />
       </div>
 
       {projects.length === 0 ? (
@@ -65,6 +77,8 @@ export function ProjectsClient({ projects }: { projects: ProjectWithStats[] }) {
             const value = Number(p.contract_value);
             const paidPct = value ? Math.round((p.totalPaid / value) * 100) : 0;
             const profit = p.totalPaid - p.totalCost;
+            const sharePct = totalValue ? Math.round((value / totalValue) * 100) : 0;
+            const costPct = value ? Math.round((p.totalCost / value) * 100) : 0;
             const st = projectStatusMeta[p.status] ?? projectStatusMeta.active;
             return (
               <Link
@@ -89,15 +103,22 @@ export function ProjectsClient({ projects }: { projects: ProjectWithStats[] }) {
                   </span>
                 </div>
 
-                <p className="text-xl font-bold text-[var(--foreground)] tabular-nums">
-                  {formatFullVND(value)}
-                </p>
+                <div className="flex items-end justify-between gap-2">
+                  <p className="text-xl font-bold text-[var(--foreground)] tabular-nums">
+                    {formatFullVND(value)}
+                  </p>
+                  <span className="text-[11px] font-semibold text-[var(--primary)] bg-[var(--primary-soft)] px-2 py-0.5 rounded-lg shrink-0">
+                    {sharePct}% tổng
+                  </span>
+                </div>
 
                 {/* progress thu tiền */}
                 <div className="mt-3">
                   <div className="flex justify-between text-xs mb-1">
                     <span className="text-[var(--muted)]">Đã thu</span>
-                    <span className="font-semibold text-[var(--primary)]">{paidPct}%</span>
+                    <span className="font-semibold text-[var(--primary)]">
+                      {paidPct}% · {formatFullVND(p.totalPaid)}
+                    </span>
                   </div>
                   <div className="h-2 rounded-full bg-[var(--primary-soft)] overflow-hidden">
                     <div
@@ -109,7 +130,8 @@ export function ProjectsClient({ projects }: { projects: ProjectWithStats[] }) {
 
                 <div className="flex justify-between mt-3 text-xs">
                   <span className="text-[var(--muted)]">
-                    Chi phí: <b className="text-[var(--foreground)]">{formatFullVND(p.totalCost)}</b>
+                    Chi phí: <b className="text-[var(--foreground)]">{formatFullVND(p.totalCost)}</b>{" "}
+                    <span className="text-[var(--muted-soft)]">· {costPct}%</span>
                   </span>
                   <span className={cn("font-semibold", profit >= 0 ? "text-emerald-600" : "text-rose-500")}>
                     {profit >= 0 ? "Lãi" : "Lỗ"} {formatFullVND(Math.abs(profit))}
@@ -130,11 +152,13 @@ function Stat({
   icon,
   label,
   value,
+  sub,
   tone,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
+  sub?: string;
   tone: "default" | "primary" | "accent";
 }) {
   const styles = {
@@ -159,6 +183,7 @@ function Stat({
       </div>
       <p className={cn("text-[10px] uppercase tracking-wider font-semibold", labelStyle[tone])}>{label}</p>
       <p className="text-lg font-bold mt-0.5 tabular-nums">{value}</p>
+      {sub && <p className={cn("text-[11px] mt-0.5", labelStyle[tone])}>{sub}</p>}
     </div>
   );
 }
