@@ -73,6 +73,65 @@ export function TaxClient({ invoices }: { invoices: TaxInvoice[] }) {
   const periodInvoices = invoices.filter((i) => i.date && t.period && inActive(i, activeKey));
   const listRows = periodInvoices.filter((r) => r.kind === listKind);
 
+  function exportExcel() {
+    const outs = periodInvoices.filter((r) => r.kind === "out");
+    const ins = periodInvoices.filter((r) => r.kind === "in");
+    const rows: (string | number)[][] = [];
+    const add = (...r: (string | number)[]) => rows.push(r);
+
+    add(`TỜ KHAI THUẾ - ${t.period?.label ?? ""}`);
+    add("");
+    add("A. TỜ KHAI GTGT (01/GTGT)");
+    add("Chỉ tiêu", "Nội dung", "Giá trị HHDV", "Thuế GTGT");
+    add("[23][24][25]", "HHDV mua vào được khấu trừ", t.inNetMatched, t.inVatDeductible);
+    add("[29]-[33]", "HHDV bán ra chịu thuế", t.outNet, t.outVat);
+    add("[40]", "Thuế GTGT còn phải nộp trong kỳ", "", t.vatPayable);
+    add("[43]", "Thuế GTGT còn được khấu trừ chuyển kỳ sau", "", t.vatCarryForward);
+    add("");
+    add("B. THUẾ TNDN TẠM TÍNH");
+    add("Doanh thu tính thuế", t.revenue);
+    add("Chi phí được trừ (có HĐ hợp lệ)", t.deductibleExpense);
+    add("Thu nhập tính thuế", t.taxableProfit);
+    add("Thuế suất", "20%");
+    add("Thuế TNDN tạm nộp", t.cit);
+    add("");
+    add("C. BẢNG KÊ HÓA ĐƠN BÁN RA (PL 01-1/GTGT)");
+    add("STT", "Số HĐ", "Ngày", "Tên người mua", "Doanh số chưa thuế", "Thuế suất (%)", "Thuế GTGT");
+    outs.forEach((r, i) =>
+      add(i + 1, r.code || "", r.date ?? "", r.partner, r.net, r.vatRate, r.vat)
+    );
+    add("", "", "", "TỔNG", t.outNet, "", t.outVat);
+    add("");
+    add("D. BẢNG KÊ HÓA ĐƠN MUA VÀO (PL 01-2/GTGT)");
+    add("STT", "Số HĐ", "Ngày", "Tên người bán", "Giá trị chưa thuế", "Thuế suất (%)", "Thuế GTGT", "Trạng thái");
+    ins.forEach((r, i) =>
+      add(
+        i + 1,
+        r.code || "",
+        r.date ?? "",
+        r.partner,
+        r.net,
+        r.vatRate,
+        r.vat,
+        statusMeta[r.status].label
+      )
+    );
+    add("", "", "", "TỔNG (đã có HĐ hợp lệ)", t.inNetMatched, "", t.inVatDeductible, "");
+
+    const csv =
+      "﻿" +
+      rows
+        .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
+        .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `to-khai-thue-${t.period?.label?.replace(/[/\s]/g, "-") ?? "ky"}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <>
       <Topbar
@@ -102,6 +161,13 @@ export function TaxClient({ invoices }: { invoices: TaxInvoice[] }) {
               onChange={(v) => setKeyByMode((s) => ({ ...s, [mode]: v }))}
               options={modeOptions.map((o) => ({ value: o.key, label: o.label }))}
             />
+            <button
+              onClick={exportExcel}
+              title="Xuất bảng kê + tờ khai ra Excel (import MISA)"
+              className="flex items-center gap-1.5 px-3 py-2.5 rounded-2xl bg-[var(--primary)] text-white text-xs font-semibold hover:bg-[var(--primary-deep)] transition-colors shadow-sm"
+            >
+              <Download className="w-4 h-4" /> Xuất Excel
+            </button>
           </div>
         }
       />
