@@ -211,6 +211,46 @@ export type Payable = {
   outstanding: number;
 };
 
+export type Project = {
+  id: string;
+  code: string | null;
+  name: string;
+  client_name: string | null;
+  contract_value: number;
+  status: string; // active / done / paused
+  start_date: string | null;
+  note: string | null;
+  created_at: string;
+};
+
+export type ProjectPayment = {
+  id: string;
+  project_id: string;
+  label: string | null;
+  amount: number;
+  paid_at: string | null;
+  note: string | null;
+  created_at: string;
+};
+
+export type ProjectCostCategory =
+  | "ai_tools"
+  | "software"
+  | "personnel"
+  | "outsource"
+  | "other";
+
+export type ProjectCost = {
+  id: string;
+  project_id: string;
+  category: ProjectCostCategory;
+  name: string | null;
+  amount: number;
+  spent_at: string | null;
+  note: string | null;
+  created_at: string;
+};
+
 type Row<T> = {
   Row: T;
   Insert: Partial<T>;
@@ -233,6 +273,9 @@ export type Database = {
       transactions: Row<Transaction>;
       budgets: Row<Budget>;
       bank_transactions: Row<BankTransaction>;
+      projects: Row<Project>;
+      project_payments: Row<ProjectPayment>;
+      project_costs: Row<ProjectCost>;
     };
     Views: {
       monthly_gap: { Row: MonthlyGap; Relationships: [] };

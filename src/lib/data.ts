@@ -14,6 +14,9 @@ import type {
   Transaction,
   Budget,
   BankTransaction,
+  Project,
+  ProjectPayment,
+  ProjectCost,
 } from "@/lib/database.types";
 import type {
   InvoiceIn,
@@ -379,6 +382,67 @@ export async function getTotalOpeningBalance(): Promise<number> {
   const { data, error } = await supabase.from("bank_accounts").select("opening_balance");
   if (error) throw new Error(`getTotalOpeningBalance: ${error.message}`);
   return (data ?? []).reduce((s, b) => s + Number(b.opening_balance), 0);
+}
+
+// ---------- Dự án ----------
+export type ProjectWithStats = Project & {
+  totalPaid: number; // khách đã thanh toán
+  totalCost: number; // tổng chi phí dự án
+};
+
+/** Danh sách dự án + tổng đã thu / tổng chi phí mỗi dự án. [] nếu chưa chạy migration. */
+export async function getProjectsWithStats(): Promise<ProjectWithStats[]> {
+  const supabase = await createClient();
+  const proj = await supabase
+    .from("projects")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (proj.error) return []; // bảng chưa tồn tại
+  const projects = (proj.data ?? []) as Project[];
+  if (projects.length === 0) return [];
+
+  const [pay, cost] = await Promise.all([
+    supabase.from("project_payments").select("project_id, amount"),
+    supabase.from("project_costs").select("project_id, amount"),
+  ]);
+
+  const sumBy = (rows: { project_id: string; amount: number }[] | null) => {
+    const m = new Map<string, number>();
+    for (const r of rows ?? []) m.set(r.project_id, (m.get(r.project_id) ?? 0) + Number(r.amount));
+    return m;
+  };
+  const paidMap = sumBy(pay.data as { project_id: string; amount: number }[] | null);
+  const costMap = sumBy(cost.data as { project_id: string; amount: number }[] | null);
+
+  return projects.map((p) => ({
+    ...p,
+    totalPaid: paidMap.get(p.id) ?? 0,
+    totalCost: costMap.get(p.id) ?? 0,
+  }));
+}
+
+export type ProjectDetail = {
+  project: Project;
+  payments: ProjectPayment[];
+  costs: ProjectCost[];
+};
+
+/** Chi tiết 1 dự án + các đợt thanh toán + chi phí. null nếu không tìm thấy. */
+export async function getProjectDetail(id: string): Promise<ProjectDetail | null> {
+  const supabase = await createClient();
+  const proj = await supabase.from("projects").select("*").eq("id", id).maybeSingle();
+  if (proj.error || !proj.data) return null;
+
+  const [pay, cost] = await Promise.all([
+    supabase.from("project_payments").select("*").eq("project_id", id).order("paid_at", { ascending: true }),
+    supabase.from("project_costs").select("*").eq("project_id", id).order("spent_at", { ascending: true }),
+  ]);
+
+  return {
+    project: proj.data as Project,
+    payments: (pay.data ?? []) as ProjectPayment[],
+    costs: (cost.data ?? []) as ProjectCost[],
+  };
 }
 
 /** Biến động số dư ngân hàng (SePay). Trả [] nếu bảng chưa tạo (chưa chạy migration). */
