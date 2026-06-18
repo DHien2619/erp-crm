@@ -211,6 +211,7 @@ export function ProjectDetailClient({ detail }: { detail: ProjectDetail }) {
               left={p.label || "Thanh toán"}
               date={fmtDate(p.paid_at)}
               amount={formatFullVND(Number(p.amount))}
+              pct={value ? Math.round((Number(p.amount) / value) * 100) : 0}
               onEdit={() => setEditPay(p)}
               onDelete={() => removePayment(p.id)}
             />
@@ -231,6 +232,7 @@ export function ProjectDetailClient({ detail }: { detail: ProjectDetail }) {
               tagColor={costCategoryMeta[c.category]?.color}
               date={fmtDate(c.spent_at)}
               amount={formatFullVND(Number(c.amount))}
+              pct={value ? Math.round((Number(c.amount) / value) * 100) : 0}
               onEdit={() => setEditCost(c)}
               onDelete={() => removeCost(c.id)}
             />
@@ -300,6 +302,7 @@ function Row({
   tagColor,
   date,
   amount,
+  pct,
   onEdit,
   onDelete,
 }: {
@@ -308,6 +311,7 @@ function Row({
   tagColor?: string;
   date: string;
   amount: string;
+  pct?: number;
   onEdit: () => void;
   onDelete: () => void;
 }) {
@@ -323,7 +327,12 @@ function Row({
         <p className="text-xs text-[var(--muted)]">{date}</p>
       </div>
       <div className="flex items-center gap-1.5 shrink-0">
-        <span className="text-sm font-semibold tabular-nums">{amount}</span>
+        <div className="text-right">
+          <span className="text-sm font-semibold tabular-nums block">{amount}</span>
+          {pct !== undefined && (
+            <span className="text-[11px] font-semibold text-[var(--primary)]">{pct}% dự án</span>
+          )}
+        </div>
         <button
           onClick={onEdit}
           aria-label="Sửa"
