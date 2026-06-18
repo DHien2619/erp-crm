@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { CustomSelect } from "@/components/ui/select";
+import { MoneyField } from "@/components/ui/money-field";
 import { createClient } from "@/lib/supabase/client";
 import {
   costCategoryOptions,
@@ -124,7 +125,7 @@ export function ProjectModal({
           <input name="client_name" defaultValue={editing?.client_name ?? ""} placeholder="Tên khách hàng" className="erp-input" />
         </Field>
         <Field label="Giá trị dự án (₫)">
-          <input name="contract_value" type="number" defaultValue={editing?.contract_value ?? ""} required placeholder="0" className="erp-input" />
+          <MoneyField name="contract_value" defaultValue={editing?.contract_value} required />
         </Field>
         <Field label="Ngày bắt đầu">
           <input name="start_date" type="date" defaultValue={editing?.start_date ?? ""} className="erp-input" />
@@ -186,7 +187,7 @@ export function PaymentModal({
           <input name="label" required placeholder="VD: Đợt 1 (tạm ứng 40%)" className="erp-input" />
         </Field>
         <Field label="Số tiền (₫)">
-          <input name="amount" type="number" required placeholder="0" className="erp-input" />
+          <MoneyField name="amount" required />
         </Field>
         <Field label="Ngày thanh toán">
           <input name="paid_at" type="date" className="erp-input" />
@@ -254,7 +255,7 @@ export function CostModal({
           <input name="name" required placeholder="VD: ChatGPT Team + Claude" className="erp-input" />
         </Field>
         <Field label="Số tiền (₫)">
-          <input name="amount" type="number" required placeholder="0" className="erp-input" />
+          <MoneyField name="amount" required />
         </Field>
         <Field label="Ngày chi">
           <input name="spent_at" type="date" className="erp-input" />

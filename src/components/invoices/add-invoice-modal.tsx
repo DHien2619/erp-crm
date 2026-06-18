@@ -7,6 +7,7 @@ import { categoryLabel, type InvoiceIn } from "@/lib/mock-data";
 import { createClient } from "@/lib/supabase/client";
 import type { InvoiceCategoryDb, InvoiceStatus } from "@/lib/database.types";
 import { CustomSelect, type SelectOption } from "@/components/ui/select";
+import { MoneyField } from "@/components/ui/money-field";
 import { cn } from "@/lib/utils";
 import { BatchOcrUpload } from "@/components/invoices/batch-ocr-upload";
 
@@ -220,11 +221,9 @@ function ManualForm({
 
       <Field label="Giá trị trước VAT">
         <div className="relative">
-          <input
+          <MoneyField
             name="amount"
-            type="number"
             defaultValue={initial?.amount}
-            placeholder="0"
             className="form-input pr-12"
             required
           />

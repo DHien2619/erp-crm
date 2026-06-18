@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { CustomSelect, type SelectOption } from "@/components/ui/select";
+import { MoneyField } from "@/components/ui/money-field";
 import { createClient } from "@/lib/supabase/client";
 import type { InvoiceStatus } from "@/lib/database.types";
 
@@ -82,10 +83,10 @@ export function RevenueModal({
           <CustomSelect value={vat} onChange={setVat} options={vatOptions} />
         </Field>
         <Field label="Tổng tiền (₫)">
-          <input name="amount" type="number" placeholder="0" required className="erp-input" />
+          <MoneyField name="amount" required />
         </Field>
         <Field label="Đã thu (₫)">
-          <input name="paid_amount" type="number" placeholder="0" className="erp-input" />
+          <MoneyField name="paid_amount" />
         </Field>
         <Field label="Trạng thái công nợ" className="col-span-2">
           <CustomSelect value={status} onChange={setStatus} options={statusOptions} />
