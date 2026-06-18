@@ -445,6 +445,133 @@ export async function getProjectDetail(id: string): Promise<ProjectDetail | null
   };
 }
 
+// ---------- Báo cáo & KPI nâng cao ----------
+export type KpiMonthly = {
+  month: string; // "T4/2026"
+  revenue: number;
+  expense: number;
+  gross: number; // lợi nhuận gộp ước tính = DT - CP
+  net: number; // lợi nhuận ròng ước tính = gộp - thuế TNDN 20% (nếu lãi)
+};
+export type TopEntity = { name: string; amount: number; count: number };
+export type OverdueDebt = {
+  name: string;
+  code: string | null;
+  amount: number;
+  dueDate: string | null;
+  daysOverdue: number;
+  kind: "AR" | "AP";
+};
+export type BudgetCompare = {
+  label: string;
+  budget: number;
+  actual: number;
+  usedPct: number;
+};
+export type KpiData = {
+  monthly: KpiMonthly[];
+  topCustomers: TopEntity[];
+  topSuppliers: TopEntity[];
+  overdue: OverdueDebt[];
+  budgets: BudgetCompare[];
+  forecast: { month: string; net: number; cumulative: number }[];
+};
+
+const CIT = 0.2;
+
+function dayDiff(a: Date, b: Date) {
+  return Math.round((a.getTime() - b.getTime()) / 86400000);
+}
+
+/** Gom toàn bộ số liệu cho trang KPI nâng cao (VND). */
+export async function getKpiData(): Promise<KpiData> {
+  const supabase = await createClient();
+  const today = new Date();
+  const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+  const [gap, out, inn, budgetRows] = await Promise.all([
+    supabase.from("monthly_gap").select("*").order("month", { ascending: true }),
+    supabase.from("invoices_out").select("company_name, amount, paid_amount, due_date, code, status"),
+    supabase.from("invoices_in").select("supplier_name, amount, paid_amount, due_date, code, status"),
+    supabase.from("budgets").select("*"),
+  ]);
+
+  // Lợi nhuận theo tháng
+  const monthly: KpiMonthly[] = ((gap.data ?? []) as MonthlyGap[]).map((r) => {
+    const revenue = Number(r.revenue);
+    const expense = Number(r.expense);
+    const gross = revenue - expense;
+    const net = gross > 0 ? Math.round(gross * (1 - CIT)) : gross;
+    const d = new Date(r.month);
+    return { month: `T${d.getMonth() + 1}/${d.getFullYear()}`, revenue, expense, gross, net };
+  });
+
+  // Top khách hàng theo doanh thu
+  const custMap = new Map<string, TopEntity>();
+  for (const o of out.data ?? []) {
+    const k = (o.company_name || "—").trim();
+    const e = custMap.get(k) ?? { name: k, amount: 0, count: 0 };
+    e.amount += Number(o.amount);
+    e.count += 1;
+    custMap.set(k, e);
+  }
+  const topCustomers = [...custMap.values()].sort((a, b) => b.amount - a.amount).slice(0, 8);
+
+  // Top nhà cung cấp theo chi phí
+  const supMap = new Map<string, TopEntity>();
+  for (const i of inn.data ?? []) {
+    const k = (i.supplier_name || "—").trim();
+    const e = supMap.get(k) ?? { name: k, amount: 0, count: 0 };
+    e.amount += Number(i.amount);
+    e.count += 1;
+    supMap.set(k, e);
+  }
+  const topSuppliers = [...supMap.values()].sort((a, b) => b.amount - a.amount).slice(0, 8);
+
+  // Công nợ quá hạn (AR: khách chưa trả đủ & quá hạn; AP: mình chưa trả NCC & quá hạn)
+  const overdue: OverdueDebt[] = [];
+  for (const o of out.data ?? []) {
+    const out_ = Number(o.amount) - Number(o.paid_amount ?? 0);
+    if (out_ <= 0 || !o.due_date) continue;
+    const due = new Date(o.due_date);
+    const d = dayDiff(todayMid, new Date(due.getFullYear(), due.getMonth(), due.getDate()));
+    if (d > 0) overdue.push({ name: o.company_name, code: o.code, amount: out_, dueDate: o.due_date, daysOverdue: d, kind: "AR" });
+  }
+  for (const i of inn.data ?? []) {
+    const out_ = Number(i.amount) - Number(i.paid_amount ?? 0);
+    if (out_ <= 0 || !i.due_date) continue;
+    const due = new Date(i.due_date);
+    const d = dayDiff(todayMid, new Date(due.getFullYear(), due.getMonth(), due.getDate()));
+    if (d > 0) overdue.push({ name: i.supplier_name, code: i.code, amount: out_, dueDate: i.due_date, daysOverdue: d, kind: "AP" });
+  }
+  overdue.sort((a, b) => b.daysOverdue - a.daysOverdue);
+
+  // Ngân sách vs thực chi
+  const budgets: BudgetCompare[] = ((budgetRows.data ?? []) as Budget[]).map((b) => {
+    const budget = Number(b.budget);
+    const actual = Number(b.actual);
+    return {
+      label: `${b.quarter ?? ""} · ${b.cost_center ?? "—"}`.trim(),
+      budget,
+      actual,
+      usedPct: budget ? Math.round((actual / budget) * 100) : 0,
+    };
+  });
+
+  // Dự báo dòng tiền 6 tháng tới (auto): trung bình net 3 tháng gần nhất
+  const lastNet = monthly.slice(-3).map((m) => m.revenue - m.expense);
+  const avgNet = lastNet.length ? Math.round(lastNet.reduce((s, n) => s + n, 0) / lastNet.length) : 0;
+  const forecast: { month: string; net: number; cumulative: number }[] = [];
+  let cum = 0;
+  for (let k = 1; k <= 6; k++) {
+    const d = new Date(today.getFullYear(), today.getMonth() + k, 1);
+    cum += avgNet;
+    forecast.push({ month: `T${d.getMonth() + 1}/${d.getFullYear()}`, net: avgNet, cumulative: cum });
+  }
+
+  return { monthly, topCustomers, topSuppliers, overdue, budgets, forecast };
+}
+
 /** Biến động số dư ngân hàng (SePay). Trả [] nếu bảng chưa tạo (chưa chạy migration). */
 export async function getBankTransactions(limit = 200): Promise<BankTransaction[]> {
   const supabase = await createClient();
