@@ -521,6 +521,51 @@ export async function getProjectDetail(id: string): Promise<ProjectDetail | null
   };
 }
 
+// ---------- Báo cáo tài chính tự động ----------
+export type FinanceRow = {
+  date: string | null;
+  net: number; // chưa VAT
+  vat: number;
+  gross: number; // gồm VAT
+  paid: number;
+  status: string;
+};
+export type FinanceData = {
+  out: FinanceRow[];
+  in: FinanceRow[];
+  openingBalance: number; // tổng số dư đầu kỳ các TK ngân hàng
+};
+
+/** Dữ liệu thô cho báo cáo tài chính (P&L, lưu chuyển tiền, cân đối). */
+export async function getFinanceData(): Promise<FinanceData> {
+  const supabase = await createClient();
+  const [out, inn, banks] = await Promise.all([
+    supabase.from("invoices_out").select("invoice_date, amount, vat_rate, paid_amount, status"),
+    supabase.from("invoices_in").select("invoice_date, amount, vat_rate, paid_amount, status"),
+    supabase.from("bank_accounts").select("opening_balance"),
+  ]);
+  if (out.error) throw new Error(`getFinanceData/out: ${out.error.message}`);
+  if (inn.error) throw new Error(`getFinanceData/in: ${inn.error.message}`);
+
+  const mk = (r: {
+    invoice_date: string | null;
+    amount: number;
+    vat_rate: number;
+    paid_amount: number | null;
+    status: string;
+  }): FinanceRow => {
+    const net = Number(r.amount);
+    const vat = Math.round((net * Number(r.vat_rate)) / 100);
+    return { date: r.invoice_date, net, vat, gross: net + vat, paid: Number(r.paid_amount ?? 0), status: r.status };
+  };
+
+  return {
+    out: (out.data ?? []).map(mk),
+    in: (inn.data ?? []).map(mk),
+    openingBalance: (banks.data ?? []).reduce((s, b) => s + Number(b.opening_balance), 0),
+  };
+}
+
 // ---------- Báo cáo & KPI nâng cao ----------
 export type KpiMonthly = {
   month: string; // "T4/2026"
