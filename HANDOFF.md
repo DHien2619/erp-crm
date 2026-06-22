@@ -1,207 +1,144 @@
-# ERP-CRM — Tài liệu bàn giao (Handoff)
+# HANDOFF — ERP-CRM (AIECOS)
 
-> Internal tool quản trị tài chính AIECOS: theo dõi gap hoá đơn đầu vào, công nợ,
-> dự báo & đề xuất chiến lược. Next.js + Supabase.
-
-Cập nhật: 2026-06-11 · Tác giả khởi tạo: Claude (cho Duc Hien / AIECOS)
-
-> **Phiên 2026-06-11 thêm:** PWA (cài app) · Export báo cáo .docx + Google Doc (qua n8n) ·
-> OCR hoá đơn từ ảnh (Gemini, upload nhiều cùng lúc) · Tích hợp **SePay** (biến động số dư
-> ngân hàng → ERP). Chi tiết ở mục 4c–4e + 6.
+Tài liệu bàn giao trạng thái dự án. Cập nhật: 2026-06.
 
 ---
 
-## 1. Link & truy cập
+## 1. Dự án là gì
+
+Web ERP-CRM nội bộ cho AIECOS — quản trị tài chính, theo dõi **gap hoá đơn** (cần bao nhiêu HĐ hợp lệ để cân chi phí, tối ưu thuế), quản lý dự án (lãi/lỗ), báo cáo thuế, KPI, báo cáo tài chính tự động.
+
+**Vai trò:** công cụ quản trị cho CHỦ DN (ra quyết định). KHÔNG thay MISA — việc nộp thuế chính thức + chữ ký số vẫn qua MISA/kế toán. Web lo phần MISA yếu (góc nhìn quản trị), xuất Excel để kế toán import MISA.
+
+---
+
+## 2. Truy cập
 
 | | |
 |---|---|
-| **Production (dùng cái này)** | https://erp-crm-kappa.vercel.app |
-| Local dev | http://localhost:3000 (chỉ khi chạy `npm run dev`) |
-| Mã nguồn | `D:\AMAX\erp-crm` |
-| GitHub | https://github.com/DHien2619/erp-crm (private, ĐÃ disconnect khỏi Vercel) |
-| Vercel | team `hienld1109-7953`, project `erp-crm` |
-| Supabase | project ref `verrksogurlxraawdhni` (region Singapore) |
-
-> ⚠️ Ưu tiên dùng link Vercel. Localhost hay tắt vì cần tiến trình `npm run dev` chạy liên tục.
+| Web production | https://erp-crm-kappa.vercel.app |
+| GitHub (public) | https://github.com/DHien2619/erp-crm |
+| Supabase project | verrksogurlxraawdhni (region gần sin1) |
+| Vercel team | hienld1109-7953s-projects / project `erp-crm` |
+| Local | `D:\AMAX\erp-crm` |
 
 ---
 
-## 2. Tech stack
+## 3. Tech stack
 
-- **Next.js 16** (App Router, Turbopack) + **TypeScript**
-- **Tailwind CSS v4** (design tokens trong `src/app/globals.css`, `@theme inline`)
-- **Recharts v3** (chart) · **lucide-react** (icon) · **Plus Jakarta Sans** (font)
-- **Supabase** (`@supabase/ssr` + `@supabase/supabase-js`) — Postgres + REST
-- Màu: tím `#5B4FCF` + accent hồng `#FF8C9A`, nền lavender, glassmorphism.
+- **Next.js 16** (App Router, Turbopack) + TypeScript + Tailwind CSS v4 (`@theme inline` trong globals.css)
+- **Supabase** (@supabase/ssr + supabase-js), Postgres, RLS **đang MỞ cho anon** (chưa có Auth)
+- **Recharts v3** (chart) — nhớ `isAnimationActive={false}`, định nghĩa local tooltip types
+- **Lark/Feishu Bitable API** (host `open.larksuite.com`, tenant_access_token)
+- **Sentry** (@sentry/nextjs) — gated theo DSN, chưa bật (chưa có DSN)
+- Deploy bằng **Vercel CLI** (`npx vercel --prod --yes`), KHÔNG qua GitHub. `vercel.json` region `sin1`.
 
 ---
 
-## 3. Chạy & deploy
+## 4. Các trang (đã chạy thật)
+
+| Route | Chức năng |
+|---|---|
+| `/` | Dashboard (cache 30s) — doanh thu/chi phí/dòng tiền/top NCC |
+| `/invoices/in` | Hoá đơn đầu vào — CRUD + **pagination/search server-side** |
+| `/customers` | Khách hàng + doanh thu + ghi nhận doanh thu |
+| `/suppliers` | Nhà cung cấp + gợi ý xin HĐ |
+| `/debts` | Công nợ phải thu/phải trả + tuổi nợ |
+| `/projects` + `/projects/[id]` | **Dự án** — tiến độ thu (%), cơ cấu chi phí + donut, payments/costs CRUD, % từng dòng |
+| `/reports` | Báo cáo Gap + xuất Word/Google Doc |
+| `/kpi` | KPI nâng cao — LN gộp/ròng, công nợ quá hạn, top KH/NCC, ngân sách, dự báo dòng tiền, Export Excel/PDF |
+| `/finance` | **Báo cáo tài chính tự động** — P&L, lưu chuyển tiền, cân đối rút gọn, chỉ số, Export |
+| `/tax` | Báo cáo thuế — tờ khai GTGT (01/GTGT)/TNDN ước tính, bảng kê, lịch nộp, **Xuất Excel import MISA** |
+| `/forecast` | Dự báo tài chính (nhập giả định tay) |
+| `/strategy` | Đề xuất chiến lược tự động (ROAS, hoà vốn) |
+| `/modules/*` | Tạm ứng, trung tâm chi phí, tài khoản NH, ngân sách, đối soát, giao dịch, yêu cầu TT |
+| `/settings` | Cấu hình + nút Đồng bộ Lark |
+
+---
+
+## 5. SQL — thứ tự chạy trong Supabase SQL Editor
+
+Tất cả an toàn chạy lại (if not exists). Đã chạy hết tính tới bản này:
+
+1. `schema.sql` — bảng gốc (companies, suppliers, invoices_in/out, expenses, views monthly_gap/receivables/payables)
+2. `migration_crm.sql` — cột paid_amount, due_date, thông tin NCC
+3. `migration_modules.sql` — module nghiệp vụ (cost_centers, bank_accounts, advances, payment_requests, transactions, budgets)
+4. `migration_sepay.sql` — bank_transactions (SePay, tuỳ chọn)
+5. `migration_projects.sql` — **projects, project_payments, project_costs** + sample
+6. `migration_perf.sql` — **index + trigram + bảng error_logs** (monitoring)
+7. `realtime.sql` — thêm bảng vào publication (tự refresh không F5)
+8. `policies_open.sql` — RLS mở cho anon
+9. `seed_stress.sql` — 10k bản ghi test (CHỈ khi cần test hiệu năng; xoá sau: `delete from invoices_in where note='STRESS'`)
+
+> Trạng thái dữ liệu thật hiện tại: invoices_in=40, invoices_out=5, projects=1 (data STRESS đã xoá).
+
+---
+
+## 6. Biến môi trường
+
+`.env.local` (local) và Vercel env (Production) — xem mẫu `.env.local.example`:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...        # public, an toàn
+LARK_APP_ID / LARK_APP_SECRET / LARK_BASE_TOKEN   # server-only
+SYNC_SECRET=...                          # bảo vệ /api/lark/sync
+# (chưa bật) SENTRY_DSN / NEXT_PUBLIC_SENTRY_DSN
+```
+
+⚠️ App Secret Lark từng dán trong chat — nên regenerate nếu lo lộ.
+
+---
+
+## 7. Tích hợp Lark
+
+- `src/lib/lark/client.ts` — token cache + list tables/fields/records (host open.larksuite.com)
+- `src/lib/lark/sync.ts` — đọc 16 bảng Lark → map → ghi đè Supabase. `matchCompany` xử lý tên "Công ty " bị cắt
+- `src/app/api/lark/sync/route.ts` — POST, check header `x-sync-secret`
+- Nút "Đồng bộ ngay" ở `/settings` + FAB. 1 chiều Lark → web.
+
+---
+
+## 8. Deploy & cập nhật
 
 ```bash
-# Chạy local
 cd D:\AMAX\erp-crm
-npm install      # lần đầu
-npm run dev      # http://localhost:3000
-
-# Build kiểm tra
-npm run build
-npx tsc --noEmit
-
-# Deploy (CLI-only, KHÔNG qua GitHub)
-npx vercel --prod --yes
+npx tsc --noEmit          # typecheck
+npm run build             # build (Turbopack)
+npx vercel --prod --yes   # deploy CLI (không qua GitHub)
+git push origin master    # đẩy code lên GitHub (DHien2619/erp-crm)
 ```
-
-- Deploy đã link sẵn (`.vercel/project.json`), env đã set trên Vercel. Chỉ cần `vercel --prod`.
-- **Env baked lúc build** → đổi env trên Vercel phải deploy lại mới có hiệu lực.
-- Skill `vercel-update` (đã viết CLI-only) tự động hoá flow này khi user nói "deploy vercel".
-
-### Biến môi trường (`.env.local`, đã gitignore)
-```
-NEXT_PUBLIC_SUPABASE_URL=https://verrksogurlxraawdhni.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon key — public, an toàn>
-```
+Hoặc dùng skill `vercel-update`. Domain ổn định: `erp-crm-kappa.vercel.app`.
 
 ---
 
-## 4. Database (Supabase)
+## 9. Hiệu năng & chất lượng (đã làm)
 
-**Bảng:** `companies` (khách hàng), `suppliers` (NCC), `expenses`, `invoices_in` (hoá đơn đầu vào = chi phí), `invoices_out` (doanh thu), `cost_centers`, `bank_accounts`, `advances` (tạm ứng), `payment_requests`, `transactions`, `budgets`.
-
-**View:** `monthly_gap` (DT/chi phí/HĐ/gap/thuế theo tháng — expense lấy từ `invoices_in`), `receivables` (công nợ phải thu theo KH), `payables` (phải trả theo NCC).
-
-**RLS:** 🔴 ĐANG MỞ cho `anon` đọc/ghi (không cần đăng nhập). **Phải siết bằng Auth trước khi public rộng** — ai có link + anon key đều xem/sửa được dữ liệu tài chính.
-
-**SQL đã chạy (trong `supabase/`):** `schema.sql` → `policies_open.sql` → `migration_crm.sql` → `migration_modules.sql`. Chạy lại an toàn (idempotent). Mở SQL Editor: https://supabase.com/dashboard/project/verrksogurlxraawdhni/sql/new
-
-## 4b. Tích hợp Lark (🟢 LIVE — nguồn dữ liệu chính)
-
-Dữ liệu thật đến từ **Lark Base "Quản trị tài chính"** (`AgenAI`), đồng bộ 1 chiều
-**Lark → Supabase** (mô hình A). Lark là nơi NHẬP, web chỉ đọc Supabase (giữ tốc độ + views).
-
-- **Lark app:** `ERP-billing` (Custom App, đã release + admin duyệt scope `bitable:app:readonly`).
-  Host **larksuite quốc tế** → `https://open.larksuite.com`.
-- **Env (server-only, có trong `.env.local` + Vercel):** `LARK_APP_ID=cli_aaacd24145789e15`,
-  `LARK_APP_SECRET=…`, `LARK_BASE_TOKEN=LsipbJ26HaogeVs2hX0jjGQxpbb` (= app_token trong link base),
-  `SYNC_SECRET=…` (bảo vệ endpoint sync).
-- **Code:** `src/lib/lark/client.ts` (token cache + list tables/records), `src/lib/lark/sync.ts`
-  (đọc bảng Lark → map → ghi đè Supabase; helper txt/num/dateISO xử lý field Lark:
-  date = timestamp ms, linked-record = object `{text}`, số = string).
-- **Endpoint:** `POST /api/lark/sync` (kéo Lark→Supabase; cần header `x-sync-secret` nếu gọi từ
-  ngoài, nút web same-origin miễn). `GET /api/lark/discover` (dò bảng/field — dùng khi cần map lại).
-- **Trigger:** nút **"Đồng bộ ngay"** trong `/settings` (LarkSyncCard) · hoặc **n8n** gọi
-  `/api/lark/sync` định kỳ (header `x-sync-secret`) — chưa bật, user tự dựng.
-- **Mapping (tên bảng/cột Lark tiếng Việt → Supabase):** 01.Chi phí→invoices_in+expenses ·
-  02.Doanh thu→invoices_out (tên KH cụt "Công ty " → khớp prefix về tên đầy đủ trong companies) ·
-  03.Khách hàng→companies · 04.Vendors→suppliers (trống thì derive từ Chi phí) ·
-  14.Trung tâm chi phí→cost_centers · 05.Tài khoản NH→bank_accounts · 09.Tạm ứng→advances.
-  Table IDs: Chi phí `tblqLkXZQVvW5G2k`, Doanh thu `tbl4z3Ch0elwKbmP` (resolve động theo tên, không hardcode).
-- **Cập nhật khi Lark đổi:** bấm "Đồng bộ ngay" (hoặc đợi n8n). Sync = TRUNCATE + insert (Lark là chân lý).
-- ⚠️ App Secret đã từng dán trong chat → có thể Regenerate trong Lark + cập nhật env nếu cần.
-
-### Pipeline nạp dữ liệu (từ file gốc `Quản trị tài chính.xlsx` — cách CŨ, vẫn dùng được)
-```bash
-# Yêu cầu: PYTHONUTF8=1 (Windows)
-python supabase/_extract.py      # xlsx -> supabase/_data.json (đã gỡ dataValidations lỗi của Lark)
-python supabase/_load.py         # nạp companies/suppliers/expenses/invoices_in/invoices_out
-python supabase/_load_modules.py # nạp cost_centers (30) / bank_accounts / advances
-```
-> Chạy lại `_load*.py` sẽ **TRUNCATE rồi nạp lại từ xlsx** → mất dữ liệu nhập tay qua UI.
-> `*.xlsx` và `supabase/_data.json` đã gitignore (dữ liệu tài chính thô).
-
-**Số liệu hiện tại (từ xlsx, T4-T5/2026):** doanh thu 212,5tr · chi phí 45tr · thiếu HĐ (gap) 15tr · 1 khách hàng (Dược Liệu Việt) · 29 NCC · số dư NH -25,9tr.
+- Pagination + search server-side (`.range()` + count + ilike/trigram), `useTransition` không mất focus
+- DB index (ngày/trạng thái/hạng mục/số tiền) + GIN trigram — tìm trên 10k ~0.24s
+- Error boundary (`error.tsx`, `global-error.tsx`) — không trắng màn hình
+- Loading skeleton (global + route)
+- Cache dashboard 30s (`unstable_cache` + client thuần `src/lib/supabase/plain.ts`)
+- Realtime auto-refresh (`src/components/realtime-refresh.tsx`)
+- Monitoring: bảng `error_logs` + Sentry (gated). Logger: `src/lib/log.ts`
 
 ---
 
-## 5. Cấu trúc code
+## 10. Còn lại / TODO
 
-```
-src/
-  app/
-    page.tsx                    # Dashboard
-    invoices/in/page.tsx        # Hoá đơn đầu vào
-    customers/page.tsx          # Khách hàng
-    suppliers/page.tsx          # Nhà cung cấp
-    debts/page.tsx              # Công nợ (AR/AP)
-    reports/page.tsx            # Báo cáo Gap
-    forecast/page.tsx           # Dự báo tài chính
-    strategy/page.tsx           # Đề xuất chiến lược (auto + manual)
-    settings/page.tsx           # Cài đặt (localStorage)
-    modules/                    # Hub + tạm ứng/cost-centers/bank-accounts/payment-requests/transactions/budgets
-  components/
-    app-shell.tsx               # Layout: sidebar hover-expand + drawer mobile + main + rightRail
-    sidebar.tsx topbar.tsx right-rail.tsx
-    ui/                         # modal, row-actions, select (CustomSelect), data-table,
-                                #   notifications-bell, global-search, user-menu
-    invoices/ customers/ suppliers/ debts/ forecast/ strategy/   # theo feature
-  lib/
-    data.ts                     # TẤT CẢ truy vấn Supabase (server) — đọc dữ liệu cho các trang
-    analytics.ts                # tính gap, supplier stats, period summary, CIT_RATE=0.2
-    tax-calendar.ts             # sinh deadline thuế VN từ ngày hiện tại
-    settings.ts                 # đọc/ghi cài đặt localStorage
-    supabase/client.ts server.ts
-    database.types.ts           # types khớp schema (mỗi table cần `Relationships: []`)
-    mock-data.ts                # types + (legacy) mock — vẫn dùng type InvoiceIn/InvoiceCategory
-supabase/                       # SQL + python loaders + SETUP.md
-```
-
-**Pattern:** trang = Server Component (`export const dynamic = "force-dynamic"`) fetch qua `data.ts` → truyền props xuống Client Component. Mutation (insert/update/delete) chạy client-side qua `supabase/client.ts` + `router.refresh()`.
+| Ưu tiên | Việc | Ghi chú |
+|---|---|---|
+| 🔴 Cao | **Auth + siết RLS** | DB đang mở, repo public — bắt buộc trước khi dùng thật/công khai |
+| 🟡 | Bật Sentry | Tạo DSN trên sentry.io → thêm SENTRY_DSN + NEXT_PUBLIC_SENTRY_DSN vào Vercel |
+| 🟡 | Xuất XML tờ khai HTKK | Cần biết phiên bản HTKK để khớp schema |
+| 🟢 | OCR hoá đơn, CRM bán hàng (pipeline), AI chat hỏi số liệu | Mở rộng |
+| 🟢 | Lark 2 chiều, pagination server-side cho bảng khác | Mở rộng |
 
 ---
 
-## 6. Tính năng ĐÃ XONG
+## 11. Lưu ý quan trọng
 
-- **Dashboard**: chart dòng tiền (lọc Ngày/Tháng/Quý/Năm), KPI luỹ kế, card GAP, top NCC, HĐ gần đây, lịch thuế.
-- **Hoá đơn đầu vào**: CRUD (thêm/sửa/xoá/đổi trạng thái) + lọc + phân trang + lọc nâng cao (ngày/số tiền).
-- **Khách hàng**: CRUD + doanh thu/công nợ mỗi KH + ghi nhận doanh thu (invoices_out).
-- **Nhà cung cấp**: gợi ý xin HĐ, thêm/sửa NCC, xem HĐ theo NCC.
-- **Công nợ**: phải thu/phải trả, tuổi nợ, nút tất toán.
-- **Báo cáo Gap**: theo kỳ + thuế TNDN tiết kiệm.
-- **Dự báo**: giả định nhập tay → projection dòng tiền + runway (startCash = số dư NH thật).
-- **Đề xuất chiến lược**: 2 tab — **Tự đề xuất** (hệ thống tự suy tăng trưởng/biên lãi/ROAS từ data) + **Tuỳ chỉnh** (nhập tay). Tính hoà vốn, lãi gộp/ròng, ROAS, KPI tháng sau, đề xuất hành động.
-- **Nghiệp vụ** (hub `/modules`): Tạm ứng, Trung tâm chi phí, Tài khoản NH (có data), Yêu cầu/Giao dịch TT, Ngân sách (bảng sẵn, chờ nhập).
-- **Cài đặt**: thông tin công ty + thuế suất + VAT + tiền mặt đầu kỳ (localStorage).
-- **UI chung**: chuông thông báo (cảnh báo nợ/HĐ/thuế), global search (Ctrl+K), custom dropdown, sidebar hover-expand, responsive mobile (drawer + grid 1 cột), menu avatar.
-
----
-
-## 7. CHƯA LÀM (việc tiếp theo)
-
-### Nhóm C — Nền tảng
-- [ ] **Auth đăng nhập** (Supabase Auth) + middleware bảo vệ route + siết RLS lại theo user/org.
-      → Sẽ kích hoạt nút **"Đăng xuất"** (hiện sidebar + menu avatar ghi "sắp có").
-- [ ] **OCR hoá đơn**: upload ảnh → AI (Claude/GPT Vision) bóc tách → điền form.
-      → Kích hoạt nút **"Chọn file"** + dropzone trong modal Thêm HĐ (tab "Upload ảnh (AI)" hiện chưa xử lý file).
-- [ ] **Upload Storage** ảnh/PDF hoá đơn (Supabase Storage).
-- [ ] **Export Excel/PDF** báo cáo.
-
-### Nhóm D — CRM bán hàng
-- [ ] Pipeline cơ hội (deal stages), lịch sử tương tác khách, tag/segment, nhắc follow-up, quản lý hợp đồng.
-
-### Khác / nợ kỹ thuật
-- [ ] Module Yêu cầu TT / Giao dịch TT / Ngân sách mới có bảng đọc, **chưa có form nhập + workflow duyệt**.
-- [ ] Trang Đối soát + KQHĐ (P&L) riêng (hiện KQHĐ trỏ tạm `/reports`).
-- [ ] Số khách hàng = 1 (companies) làm "DT/khách" lệch — sẽ chuẩn khi nhập thêm KH.
-- [ ] ROAS = "—" vì data chưa có chi phí category "Marketing".
-
----
-
-## 8. Gotchas (đã dính, ghi lại)
-
-- **Recharts v3**: `TooltipProps` generic không còn `payload/label` → tự định nghĩa type tooltip cục bộ; set `isAnimationActive={false}`.
-- **database.types.ts**: mỗi table phải có `Relationships: []` nếu không `supabase-js` infer ra `never` khi insert.
-- **Trang fetch data**: cần `export const dynamic = "force-dynamic"` (không prerender static).
-- **Đổi schema**: ALTER/CREATE TABLE phải chạy ở Supabase SQL Editor (anon key không có quyền DDL). Sau đó `notify pgrst, 'reload schema';` để REST thấy bảng mới.
-- **Build trước deploy** luôn (next build bắt lỗi ESLint/type mà dev bỏ qua).
-- **LF→CRLF warning** khi git add trên Windows: vô hại.
-- **Screenshot tool** của môi trường Claude hay timeout → verify bằng đọc DOM/curl.
-- Skill `vercel-update` đã đổi thành **CLI-only** (bản .skill ở `~/.claude/skills/vercel-update.skill` — cần upload claude.ai để sync máy khác).
-
----
-
-## 9. Lệnh nhanh cho phiên Claude tiếp theo
-
-- "deploy vercel" → chạy skill `vercel-update` (build → `vercel --prod`).
-- "nạp lại data" → `python supabase/_load.py` (+ `_load_modules.py`).
-- "làm nhóm C / D" → xem mục 7.
-- Memory dự án: `~/.claude/projects/D--AMAX-ERB-bills/memory/project_erp_crm.md`.
+- **Báo cáo tài chính/thuế là bản QUẢN TRỊ** (ước tính để ra quyết định), KHÔNG thay BCTC pháp lý / tờ khai chính thức. Chi phí lương/khấu hao nếu chưa nhập thì chưa phản ánh.
+- **Không tự nộp thuế được** — cần chữ ký số + giấy phép T-VAN (MISA có). Web chỉ chuẩn bị + xuất Excel.
+- **Bảo mật:** anon key là public-safe, nhưng RLS mở = ai có URL Supabase trong code đều đọc/ghi. Phải thêm Auth trước khi public rộng.
+- Máy chính: `D:\AMAX\erp-crm` (Windows, COMPUTERNAME HIENZ). HANDOFF + CLAUDE.md không sync giữa máy.
