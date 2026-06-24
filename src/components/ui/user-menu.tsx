@@ -2,11 +2,42 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Settings, LogOut } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Settings, LogOut, Loader2 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { roleLabel } from "@/lib/roles";
+
+function initials(name: string) {
+  const p = name.trim().split(/\s+/).filter(Boolean);
+  if (p.length === 0) return "?";
+  if (p.length === 1) return p[0].slice(0, 2).toUpperCase();
+  return (p[0][0] + p[p.length - 1][0]).toUpperCase();
+}
 
 export function UserMenu() {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [user, setUser] = useState<{ name: string; email: string; role: string } | null>(null);
+  const [loggingOut, setLoggingOut] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(async ({ data }) => {
+      const u = data.user;
+      if (!u) return;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, role")
+        .eq("id", u.id)
+        .maybeSingle();
+      setUser({
+        name: (profile?.full_name as string) || u.email || "Người dùng",
+        email: u.email || "",
+        role: (profile?.role as string) || "staff",
+      });
+    });
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -17,6 +48,15 @@ export function UserMenu() {
     return () => window.removeEventListener("mousedown", onDown);
   }, [open]);
 
+  async function logout() {
+    setLoggingOut(true);
+    await createClient().auth.signOut();
+    router.replace("/login");
+    router.refresh();
+  }
+
+  const name = user?.name ?? "...";
+
   return (
     <div className="relative" ref={ref}>
       <button
@@ -24,14 +64,19 @@ export function UserMenu() {
         aria-label="Tài khoản"
         className="w-11 h-11 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-deep)] flex items-center justify-center text-white text-sm font-bold shadow-md shrink-0 hover:ring-2 hover:ring-[var(--primary)]/30 transition-all"
       >
-        DH
+        {initials(name)}
       </button>
 
       {open && (
         <div className="absolute right-0 mt-2 w-60 bg-white rounded-2xl shadow-xl border border-[var(--border)] p-2 z-40">
           <div className="px-3 py-2 border-b border-[var(--border)] mb-1">
-            <p className="text-sm font-bold text-[var(--foreground)]">Duc Hien</p>
-            <p className="text-[11px] text-[var(--muted)]">hien.ld.1109@gmail.com</p>
+            <p className="text-sm font-bold text-[var(--foreground)] truncate">{name}</p>
+            <p className="text-[11px] text-[var(--muted)] truncate">{user?.email}</p>
+            {user && (
+              <span className="inline-block mt-1.5 text-[10px] font-semibold bg-[var(--primary-soft)] text-[var(--primary)] px-2 py-0.5 rounded-full">
+                {roleLabel[user.role] ?? user.role}
+              </span>
+            )}
           </div>
           <Link
             href="/settings"
@@ -42,15 +87,12 @@ export function UserMenu() {
             Cài đặt
           </Link>
           <button
-            disabled
-            title="Cần bật đăng nhập (Auth) trước"
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-[var(--muted-soft)] cursor-not-allowed"
+            onClick={logout}
+            disabled={loggingOut}
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-rose-600 hover:bg-rose-50 transition-colors disabled:opacity-60"
           >
-            <LogOut className="w-4 h-4" />
+            {loggingOut ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogOut className="w-4 h-4" />}
             Đăng xuất
-            <span className="ml-auto text-[10px] bg-[var(--primary-soft)] text-[var(--primary)] px-2 py-0.5 rounded-full">
-              sắp có
-            </span>
           </button>
         </div>
       )}

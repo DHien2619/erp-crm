@@ -19,7 +19,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
+import { isAllowed } from "@/lib/roles";
 
 const navItems = [
   { icon: Home, label: "Dashboard", href: "/" },
@@ -51,6 +54,23 @@ export function Sidebar({
   expanded?: boolean;
 }) {
   const pathname = usePathname();
+  const [role, setRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (!data.user) return;
+      const { data: p } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", data.user.id)
+        .maybeSingle();
+      setRole((p?.role as string) ?? "staff");
+    });
+  }, []);
+
+  // role=null (đang tải) -> hiện tạm tất cả để tránh nháy; lọc khi có role
+  const items = role ? navItems.filter((i) => isAllowed(role, i.href)) : navItems;
 
   const label = (text: string) =>
     cn(
@@ -76,7 +96,7 @@ export function Sidebar({
       </div>
 
       <nav className="flex flex-col gap-1.5 flex-1">
-        {navItems.map((item) => {
+        {items.map((item) => {
           const active = isActive(pathname, item.href);
           return (
             <Link
