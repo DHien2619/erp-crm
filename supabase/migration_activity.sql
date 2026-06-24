@@ -16,9 +16,22 @@ create table if not exists activity_log (
 create index if not exists idx_activity_created on activity_log (created_at desc);
 
 alter table activity_log enable row level security;
+
+-- Gỡ chính sách mở cũ (nếu đã chạy bản trước)
 drop policy if exists "open access" on activity_log;
-create policy "open access" on activity_log
-  for all to anon, authenticated using (true) with check (true);
+drop policy if exists "insert log" on activity_log;
+drop policy if exists "read own or admin" on activity_log;
+
+-- Ghi log: cho phép (server set user_id theo phiên đăng nhập)
+create policy "insert log" on activity_log
+  for insert to anon, authenticated with check (true);
+
+-- ĐỌC: chỉ nhật ký CỦA CHÍNH MÌNH; riêng admin được xem tất cả
+create policy "read own or admin" on activity_log
+  for select to authenticated using (
+    user_id = auth.uid()
+    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+  );
 
 -- Bật realtime để báo cáo tự cập nhật
 do $$
