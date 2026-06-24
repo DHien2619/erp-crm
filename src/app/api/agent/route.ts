@@ -1,6 +1,27 @@
 import { NextResponse } from "next/server";
 import Groq from "groq-sdk";
 import { AGENT_TOOLS, WRITE_TOOLS, runReadTool } from "@/lib/agent/tools";
+import { createClient } from "@/lib/supabase/server";
+
+/** Ghi nhật ký mỗi lần hỏi AI (best-effort, không chặn phản hồi). */
+async function logActivity(question: string, answer: string, tools: string[]) {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    await supabase.from("activity_log").insert({
+      kind: "agent_chat",
+      user_id: user?.id ?? null,
+      user_email: user?.email ?? null,
+      question: question.slice(0, 2000),
+      answer: answer.slice(0, 4000),
+      tools,
+    });
+  } catch {
+    // bỏ qua — không để lỗi log làm hỏng phản hồi
+  }
+}
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -41,6 +62,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ type: "error", content: "Body không hợp lệ." }, { status: 400 });
   }
 
+  const lastQuestion =
+    [...(body.messages ?? [])].reverse().find((m) => m.role === "user")?.content ?? "";
+  const usedTools: string[] = [];
+
   const groq = new Groq({ apiKey: key });
   const history: Msg[] = [
     { role: "system", content: SYSTEM },
@@ -66,7 +91,9 @@ export async function POST(req: Request) {
       const calls = msg.tool_calls ?? [];
 
       if (calls.length === 0) {
-        return NextResponse.json({ type: "message", content: msg.content ?? "" });
+        const content = msg.content ?? "";
+        await logActivity(lastQuestion, content, usedTools);
+        return NextResponse.json({ type: "message", content });
       }
 
       history.push({ role: "assistant", content: msg.content ?? "", tool_calls: msg.tool_calls });
@@ -74,10 +101,12 @@ export async function POST(req: Request) {
       // Tool ghi -> dừng, trả về cho client xác nhận
       const writeCall = calls.find((c) => WRITE_TOOLS.has(c.function.name));
       if (writeCall) {
+        usedTools.push(writeCall.function.name);
         let args: Record<string, unknown> = {};
         try {
           args = JSON.parse(writeCall.function.arguments || "{}");
         } catch {}
+        await logActivity(lastQuestion, `[Đề xuất] ${writeCall.function.name}`, usedTools);
         return NextResponse.json({
           type: "confirm",
           action: { name: writeCall.function.name, args },
@@ -86,6 +115,7 @@ export async function POST(req: Request) {
 
       // Chạy các tool đọc
       for (const c of calls) {
+        usedTools.push(c.function.name);
         let args: Record<string, unknown> = {};
         try {
           args = JSON.parse(c.function.arguments || "{}");

@@ -5,9 +5,9 @@ const ACCESS: Record<Role, string[] | "*"> = {
   admin: "*",
   accountant: [
     "/", "/invoices", "/customers", "/suppliers", "/debts",
-    "/reports", "/kpi", "/finance", "/tax", "/forecast", "/strategy", "/modules", "/settings",
+    "/reports", "/kpi", "/finance", "/tax", "/forecast", "/strategy", "/modules", "/activity", "/settings",
   ],
-  hr: ["/", "/projects", "/customers", "/settings"],
+  hr: ["/", "/projects", "/customers", "/activity", "/settings"],
   staff: ["/", "/invoices"],
 };
 

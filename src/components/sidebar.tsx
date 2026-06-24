@@ -14,6 +14,7 @@ import {
   Target,
   Landmark,
   FolderKanban,
+  History,
   Settings,
   LogOut,
 } from "lucide-react";
@@ -38,6 +39,7 @@ const navItems = [
   { icon: TrendingUp, label: "Dự báo", href: "/forecast" },
   { icon: Target, label: "Chiến lược", href: "/strategy" },
   { icon: LayoutGrid, label: "Nghiệp vụ", href: "/modules" },
+  { icon: History, label: "Nhật ký AI", href: "/activity" },
   { icon: Settings, label: "Cài đặt", href: "/settings" },
 ];
 

@@ -251,6 +251,17 @@ export type ProjectCost = {
   created_at: string;
 };
 
+export type ActivityLog = {
+  id: string;
+  kind: string;
+  user_id: string | null;
+  user_email: string | null;
+  question: string | null;
+  answer: string | null;
+  tools: string[] | null;
+  created_at: string;
+};
+
 export type Profile = {
   id: string;
   email: string | null;
@@ -296,6 +307,7 @@ export type Database = {
       project_costs: Row<ProjectCost>;
       error_logs: Row<ErrorLog>;
       profiles: Row<Profile>;
+      activity_log: Row<ActivityLog>;
     };
     Views: {
       monthly_gap: { Row: MonthlyGap; Relationships: [] };

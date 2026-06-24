@@ -521,6 +521,18 @@ export async function getProjectDetail(id: string): Promise<ProjectDetail | null
   };
 }
 
+// ---------- Nhật ký hoạt động AI ----------
+export async function getActivityLog(limit = 200) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("activity_log")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) return []; // bảng chưa tạo
+  return data ?? [];
+}
+
 // ---------- Báo cáo tài chính tự động ----------
 export type FinanceRow = {
   date: string | null;
