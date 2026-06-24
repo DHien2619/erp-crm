@@ -25,7 +25,8 @@ type Msg = {
 };
 
 export async function POST(req: Request) {
-  const key = process.env.GROQ_API_KEY;
+  // Chỉ giữ ký tự ASCII in được — loại BOM/zero-width/whitespace lẫn vào khi set env
+  const key = process.env.GROQ_API_KEY?.replace(/[^\x21-\x7e]/g, "");
   if (!key) {
     return NextResponse.json(
       { type: "error", content: "Chưa cấu hình GROQ_API_KEY. Tạo key free tại console.groq.com rồi thêm vào biến môi trường." },
