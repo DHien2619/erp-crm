@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Settings, LogOut, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useCurrentUser } from "@/components/role-provider";
 import { roleLabel } from "@/lib/roles";
 
 function initials(name: string) {
@@ -16,28 +17,11 @@ function initials(name: string) {
 
 export function UserMenu() {
   const router = useRouter();
+  const current = useCurrentUser();
+  const user = current ? { name: current.fullName, email: current.email, role: current.role } : null;
   const [open, setOpen] = useState(false);
-  const [user, setUser] = useState<{ name: string; email: string; role: string } | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(async ({ data }) => {
-      const u = data.user;
-      if (!u) return;
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("full_name, role")
-        .eq("id", u.id)
-        .maybeSingle();
-      setUser({
-        name: (profile?.full_name as string) || u.email || "Người dùng",
-        email: u.email || "",
-        role: (profile?.role as string) || "staff",
-      });
-    });
-  }, []);
 
   useEffect(() => {
     if (!open) return;

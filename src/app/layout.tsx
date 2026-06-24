@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { PwaRegister } from "@/components/pwa-register";
+import { RoleProvider } from "@/components/role-provider";
+import { getCurrentUser } from "@/lib/auth";
 
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
@@ -34,15 +36,16 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const user = await getCurrentUser();
   return (
     <html lang="vi" className={`${jakarta.variable} h-full antialiased`}>
       <body className="min-h-full bg-background text-foreground">
-        {children}
+        <RoleProvider user={user}>{children}</RoleProvider>
         <PwaRegister />
       </body>
     </html>

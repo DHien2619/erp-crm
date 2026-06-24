@@ -20,9 +20,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { createClient } from "@/lib/supabase/client";
+import { useCurrentUser } from "@/components/role-provider";
 import { isAllowed } from "@/lib/roles";
 
 const navItems = [
@@ -56,22 +55,11 @@ export function Sidebar({
   expanded?: boolean;
 }) {
   const pathname = usePathname();
-  const [role, setRole] = useState<string | null>(null);
+  const user = useCurrentUser();
+  const role = user?.role ?? null;
 
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(async ({ data }) => {
-      if (!data.user) return;
-      const { data: p } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", data.user.id)
-        .maybeSingle();
-      setRole((p?.role as string) ?? "staff");
-    });
-  }, []);
-
-  // role=null (đang tải) -> hiện tạm tất cả để tránh nháy; lọc khi có role
+  // Có role từ server ngay từ lần render đầu -> lọc đúng, không nháy.
+  // Nếu chưa đăng nhập (role null) thì hiện đủ (trang /login không dùng sidebar).
   const items = role ? navItems.filter((i) => isAllowed(role, i.href)) : navItems;
 
   const label = (text: string) =>
@@ -97,7 +85,7 @@ export function Sidebar({
         </span>
       </div>
 
-      <nav className="flex flex-col gap-1.5 flex-1">
+      <nav className="flex flex-col gap-1.5 flex-1 min-h-0 overflow-y-auto overflow-x-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {items.map((item) => {
           const active = isActive(pathname, item.href);
           return (
