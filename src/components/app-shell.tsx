@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Menu } from "lucide-react";
 import { Sidebar } from "./sidebar";
 import { QuickActions } from "@/components/ui/quick-actions";
+import { AgentChat } from "@/components/agent/agent-chat";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { AddInvoiceModal } from "@/components/invoices/add-invoice-modal";
 import { RevenueModal } from "@/components/customers/revenue-modal";
@@ -60,6 +61,7 @@ export function AppShell({
       </div>
 
       <QuickActions />
+      <AgentChat />
       <RealtimeRefresh />
 
       {quick === "invoice" && (
